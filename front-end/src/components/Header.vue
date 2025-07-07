@@ -1,10 +1,11 @@
 <script setup>
 import Wrapper from "@/components/Wrapper.vue";
-import {ArrowRight, Heart, Menu, ShoppingBag, User} from 'lucide-vue-next';
+import {ArrowRight, Heart, Menu, Search, ShoppingBag, User} from 'lucide-vue-next';
 import SheetGeneral from "@/components/SheetGeneral.vue";
 import {useRoute} from "vue-router";
 import {computed} from "vue";
 import {cn} from "@/lib/utils.js";
+import {Button} from "@/components/ui/button/index.js";
 
 const route = useRoute()
 const isOnAboutPage = computed(() => route.path === "/about");
@@ -15,10 +16,10 @@ const isOnProductsPage = computed(() => route.path === "/products");
 <template>
   <div class="z-50 w-full backdrop-blur-sm bg-white/70 fixed top-0">
     <Wrapper>
-      <div class="flex items-center justify-between">
+      <div class="grid lg:grid-cols-[328px_1fr_auto] sm:grid-cols-[132px_1fr_auto] grid-cols-3">
         <SheetGeneral trigger-class="sm:hidden" side="left" title="FUMI">
           <template #trigger>
-            <Menu class="order-1 block sm:hidden cursor-pointer"/>
+            <Menu class="order-1 block sm:hidden cursor-pointer col-start-1"/>
           </template>
           <template #content>
             <ul class="p-4">
@@ -59,10 +60,11 @@ const isOnProductsPage = computed(() => route.path === "/products");
             </ul>
           </template>
         </SheetGeneral>
-        <router-link to="/" class="order-2 sm:order-1">
+        <router-link to="/"
+                     class="order-2 sm:order-1 col-start-2 sm:col-start-1 flex items-center justify-center sm:justify-start">
           <h1 class="font-semibold text-base sm:text-lg">FUMI</h1>
         </router-link>
-        <ul class="sm:order-2 hidden sm:flex gap-3">
+        <ul class="sm:order-2 col-start-2 hidden sm:flex sm:items-center sm:justify-center gap-3">
           <li :class="cn('text-gray-700 hover:text-black', isOnProductsPage && 'text-black')">
             <router-link to="/products">
               Products
@@ -79,7 +81,26 @@ const isOnProductsPage = computed(() => route.path === "/products");
             </router-link>
           </li>
         </ul>
-        <ul class="order-3 flex gap-3">
+        <ul class="order-3 col-start-3 flex items-center justify-end gap-3">
+          <li class="relative items-center hidden lg:flex">
+            <input name="search" class="pl-7 border rounded-sm px-2 py-1" type="text" placeholder="Search..."/>
+            <Search class="text-gray-600 absolute top-[5px] left-1"/>
+          </li>
+          <SheetGeneral side="top">
+            <template #trigger>
+              <li class="lg:hidden block">
+                <Search></Search>
+              </li>
+            </template>
+            <template #content>
+              <div class="relative items-center w-full flex p-5 pt-0 gap-3">
+                <input name="search" class="pl-7 border w-full rounded-sm px-2 py-1" type="text"
+                       placeholder="Search..."/>
+                <Search class="text-gray-600 absolute top-[5px] left-6"/>
+                <Button class="bg-[#c9a275] h-[34px] cursor-pointer hover:bg-[#dbb384]">Go</Button>
+              </div>
+            </template>
+          </SheetGeneral>
           <li class="hidden sm:block">
             <User></User>
           </li>
