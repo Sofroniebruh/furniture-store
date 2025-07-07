@@ -1,18 +1,24 @@
 <script setup>
 import Wrapper from "@/components/Wrapper.vue";
 import {Button} from "@/components/ui/button/index.js";
-import {Heart, Plus} from 'lucide-vue-next';
+import {Plus} from 'lucide-vue-next';
+import {cn} from "@/lib/utils.js";
 
 const props = defineProps({
   productName: String,
   productPrice: Number,
   productColorsAmount: Number,
   productImage: String,
+  class: {
+    type: String,
+    required: false,
+  }
 })
+const className = props.class
 </script>
 
 <template>
-  <div class="w-full max-w-[300px]">
+  <div :class="cn('w-full max-w-[300px]', className)">
     <Wrapper>
       <div class="flex flex-col gap-2 items-center">
         <div class="rounded-sm w-[150px] h-[150px] overflow-hidden">
@@ -27,11 +33,10 @@ const props = defineProps({
             </div>
           </div>
         </div>
-        <div class="flex items-center w-full">
+        <div class="flex items-center w-full mt-[17px]">
           <Button class="flex-1 bg-[#c9a275] hover:bg-[#dbb384] cursor-pointer">Add to cart
             <Plus></Plus>
           </Button>
-          <Heart class="m-5 mr-0 w-6 h-6 cursor-pointer"></Heart>
         </div>
       </div>
     </Wrapper>

@@ -64,3 +64,90 @@ export const productsData = [
         amountOfColors: 4,
     }
 ]
+
+export const productsData2 = [
+    {
+        id: 1,
+        productName: "Cool lamp 1",
+        productPrice: 40,
+        productPicture: "/images/furniture1.webp",
+        amountOfColors: 3,
+    },
+    {
+        id: 2,
+        productName: "Cool lamp 2",
+        productPrice: 40,
+        productPicture: "/images/furniture2.webp",
+        amountOfColors: 4,
+    },
+    {
+        id: 3,
+        productName: "Cool lamp 3",
+        productPrice: 40,
+        productPicture: "/images/furniture3.webp",
+        amountOfColors: 5,
+    },
+    {
+        id: 4,
+        productName: "Cool lamp 4",
+        productPrice: 40,
+        productPicture: "/images/furniture4.webp",
+        amountOfColors: 6,
+    },
+    {
+        id: 5,
+        productName: "Cool lamp 5",
+        productPrice: 40,
+        productPicture: "/images/furniture5.webp",
+        amountOfColors: 7,
+    },
+    {
+        id: 6,
+        productName: "Cool lamp 6",
+        productPrice: 40,
+        productPicture: "/images/furniture6.webp",
+        amountOfColors: 4,
+    },
+    {
+        id: 1,
+        productName: "Cool lamp 1",
+        productPrice: 40,
+        productPicture: "/images/furniture1.webp",
+        amountOfColors: 3,
+    },
+    {
+        id: 2,
+        productName: "Cool lamp 2",
+        productPrice: 40,
+        productPicture: "/images/furniture2.webp",
+        amountOfColors: 4,
+    },
+    {
+        id: 3,
+        productName: "Cool lamp 3",
+        productPrice: 40,
+        productPicture: "/images/furniture3.webp",
+        amountOfColors: 5,
+    },
+    {
+        id: 4,
+        productName: "Cool lamp 4",
+        productPrice: 40,
+        productPicture: "/images/furniture4.webp",
+        amountOfColors: 6,
+    },
+    {
+        id: 5,
+        productName: "Cool lamp 5",
+        productPrice: 40,
+        productPicture: "/images/furniture5.webp",
+        amountOfColors: 7,
+    },
+    {
+        id: 6,
+        productName: "Cool lamp 6",
+        productPrice: 40,
+        productPicture: "/images/furniture6.webp",
+        amountOfColors: 4,
+    }
+]

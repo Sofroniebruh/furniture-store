@@ -130,3 +130,13 @@
 li {
     cursor: pointer;
 }
+
+@media (max-width: 460px) {
+    .products-block {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+}

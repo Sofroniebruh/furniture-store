@@ -2,6 +2,7 @@ import HeroPage from "@/components/HeroPage.vue";
 import {createRouter, createWebHistory} from "vue-router";
 import AboutUs from "@/components/AboutUs.vue";
 import ContactUs from "@/components/ContactUs.vue";
+import Products from "@/components/Products.vue";
 
 const routes = [
     {
@@ -12,6 +13,9 @@ const routes = [
     },
     {
         path: "/contact", name: "Contact Us page", component: ContactUs,
+    },
+    {
+        path: "/products", name: "Products page", component: Products,
     }
 ]
 

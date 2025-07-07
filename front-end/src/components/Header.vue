@@ -9,6 +9,7 @@ import {cn} from "@/lib/utils.js";
 const route = useRoute()
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
+const isOnProductsPage = computed(() => route.path === "/products");
 </script>
 
 <template>
@@ -22,9 +23,11 @@ const isOnContactPage = computed(() => route.path === "/contact");
           <template #content>
             <ul class="p-4">
               <li>
-                <div class="flex items-center justify-between text-gray-700 hover:text-black">
-                  <p class="text-2xl ">Products</p>
-                  <ArrowRight/>
+                <div class=" text-gray-700 hover:text-black">
+                  <router-link to="/products" class="text-2xl flex justify-between w-full items-center">
+                    <p class="text-2xl ">Products</p>
+                    <ArrowRight/>
+                  </router-link>
                 </div>
               </li>
               <li>
@@ -60,16 +63,18 @@ const isOnContactPage = computed(() => route.path === "/contact");
           <h1 class="font-semibold text-base sm:text-lg">FUMI</h1>
         </router-link>
         <ul class="sm:order-2 hidden sm:flex gap-3">
-          <li class="text-gray-700 hover:text-black">
-            Products
+          <li :class="cn('text-gray-700 hover:text-black', isOnProductsPage && 'text-black')">
+            <router-link to="/products">
+              Products
+            </router-link>
           </li>
           <li :class="cn('text-gray-700 hover:text-black', isOnAboutPage && 'text-black')">
-            <router-link to="/about" class="relative">
+            <router-link to="/about">
               About Us
             </router-link>
           </li>
           <li :class="cn('text-gray-700 hover:text-black', isOnContactPage && 'text-black')">
-            <router-link to="/contact" class="flex flex-col">
+            <router-link to="/contact">
               Contact Us
             </router-link>
           </li>
