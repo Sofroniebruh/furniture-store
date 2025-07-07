@@ -1,0 +1,4 @@
+#Env files
+.env
+#Logs
+.DS_Store
