@@ -8,6 +8,7 @@ import (
 	"furniture-store-backend/db"
 	"furniture-store-backend/models"
 	"furniture-store-backend/utils"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -185,5 +186,59 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{
 		"user": user,
+	})
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Method not allowed",
+		})
+		return
+	}
+
+	cookie, err := r.Cookie("refresh_token")
+
+	if err != nil || cookie == nil || cookie.Value == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to read cookies",
+		})
+		return
+	}
+
+	token, _ := utils.ParseToken(cookie.Value)
+	claims := token.Claims.(jwt.MapClaims)
+	userId, _ := uuid.Parse(claims["sub"].(string))
+
+	_, err = db.DB.Exec("UPDATE users SET refresh_token = NULL WHERE id = $1", userId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to update the user",
+		})
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Logged out successfully",
 	})
 }
