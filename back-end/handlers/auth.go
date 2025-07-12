@@ -37,7 +37,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Invalid request",
+			"error": "Failed to read request",
 		})
 		return
 	}
@@ -124,5 +124,66 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{
 		"created": user,
+	})
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Method not allowed",
+		})
+		return
+	}
+	var user models.User
+
+	err := json.NewDecoder(r.Body).Decode(&userInfoRequest)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to read request",
+		})
+	}
+
+	if userInfoRequest.Username == "" || userInfoRequest.Email == "" || userInfoRequest.Password == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Username, Email and Password are required",
+		})
+		return
+	}
+
+	err = db.DB.Get(&user, "SELECT * FROM users WHERE email = $1", userInfoRequest.Email)
+
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInfoRequest.Password)) != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	accessToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
+	refreshToken, _ := utils.GenerateToken(user.ID, config.REFRESH_TOKEN_TTL)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]models.User{
+		"user": user,
 	})
 }
