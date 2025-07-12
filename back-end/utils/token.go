@@ -32,7 +32,12 @@ func RetrieveIdFromCookie(r *http.Request, cookieName string) (uuid.UUID, error)
 		return uuid.Nil, errors.New("invalid cookie")
 	}
 
-	token, _ := ParseToken(cookie.Value)
+	token, err := ParseToken(cookie.Value)
+
+	if err != nil || !token.Valid {
+		return uuid.Nil, errors.New("unauthorized")
+	}
+
 	claims := token.Claims.(jwt.MapClaims)
 	return uuid.Parse(claims["sub"].(string))
 }

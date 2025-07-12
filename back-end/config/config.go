@@ -14,6 +14,10 @@ var (
 	REFRESH_TOKEN_TTL = time.Hour * 24 * 7
 )
 
+type userId string
+
+const UserIdKey userId = "userId"
+
 func init() {
 	err := godotenv.Load()
 	if err != nil {

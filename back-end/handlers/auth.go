@@ -21,14 +21,6 @@ var userInfoRequest struct {
 }
 
 func Signup(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Method not allowed",
-		})
-		return
-	}
-
 	var existingUser models.User
 	var user models.User
 
@@ -128,13 +120,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Method not allowed",
-		})
-		return
-	}
 	var user models.User
 
 	err := json.NewDecoder(r.Body).Decode(&userInfoRequest)
@@ -189,14 +174,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Method not allowed",
-		})
-		return
-	}
-
 	userId, err := utils.RetrieveIdFromCookie(r, "refresh_token")
 
 	if err != nil {
@@ -239,14 +216,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Method not allowed",
-		})
-		return
-	}
-
 	userId, err := utils.RetrieveIdFromCookie(r, "refresh_token")
 
 	if err != nil {
