@@ -8,7 +8,6 @@ import (
 	"furniture-store-backend/db"
 	"furniture-store-backend/models"
 	"furniture-store-backend/utils"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -198,19 +197,15 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("refresh_token")
+	userId, err := utils.RetrieveIdFromCookie(r, "refresh_token")
 
-	if err != nil || cookie == nil || cookie.Value == "" {
-		w.WriteHeader(http.StatusUnauthorized)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to read cookies",
+			"error": err.Error(),
 		})
 		return
 	}
-
-	token, _ := utils.ParseToken(cookie.Value)
-	claims := token.Claims.(jwt.MapClaims)
-	userId, _ := uuid.Parse(claims["sub"].(string))
 
 	_, err = db.DB.Exec("UPDATE users SET refresh_token = NULL WHERE id = $1", userId)
 
@@ -240,5 +235,58 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Logged out successfully",
+	})
+}
+
+func Refresh(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Method not allowed",
+		})
+		return
+	}
+
+	userId, err := utils.RetrieveIdFromCookie(r, "refresh_token")
+
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	refreshToken, _ := utils.GenerateToken(userId, config.REFRESH_TOKEN_TTL)
+	accessToken, _ := utils.GenerateToken(userId, config.ACCESS_TOKEN_TTL)
+
+	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1 WHERE id = $2", refreshToken, userId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to update the user",
+		})
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Refreshed successfully",
 	})
 }

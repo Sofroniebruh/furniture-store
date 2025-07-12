@@ -18,6 +18,7 @@ func main() {
 	http.HandleFunc("/registration", handlers.Signup)
 	http.HandleFunc("/login", handlers.Login)
 	http.HandleFunc("/logout", handlers.Logout)
+	http.HandleFunc("/refresh", handlers.Refresh)
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", nil)
