@@ -1,36 +1,129 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"furniture-store-backend/db"
 	"furniture-store-backend/models"
+	"furniture-store-backend/utils"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/lib/pq"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 )
 
-var productRequest struct {
-	Name        string  `json:"name"`
-	Amount      int     `json:"amount"`
-	Price       float64 `json:"price"`
-	PictureUrl  string  `json:"pictureUrl"`
-	Description string  `json:"description"`
+func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file multipart.File) {
+	s3Client, err := utils.LoadS3Client()
+
+	if err != nil {
+		log.Printf("failed to load S3 client: %v", err)
+		ch <- ""
+		return
+	}
+
+	_, err = s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(os.Getenv("BUCKET_NAME")),
+		Key:         aws.String("public-images/" + header.Filename),
+		Body:        file,
+		ContentType: aws.String(header.Header.Get("Content-Type")),
+	})
+
+	if err != nil {
+		log.Printf("failed to load S3 client: %v", err)
+		ch <- ""
+		return
+	}
+
+	bucket := os.Getenv("BUCKET_NAME")
+	region := os.Getenv("AWS_REGION")
+	key := "public-images/" + header.Filename
+	ch <- fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key)
 }
 
 func AddProduct(w http.ResponseWriter, r *http.Request) {
-	err := json.NewDecoder(r.Body).Decode(&productRequest)
 	var product models.Product
+	s3ch := make(chan string)
+
+	err := r.ParseMultipartForm(10 << 20)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to parse request body",
+			"error": "Unable to parse form",
+		})
+	}
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	price, err := strconv.ParseFloat(r.FormValue("price"), 64)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse price",
 		})
 		return
 	}
 
-	if productRequest.Price <= 0 || productRequest.Amount <= 0 {
+	amount, err := strconv.Atoi(r.FormValue("amount"))
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse amount",
+		})
+		return
+	}
+
+	files := r.MultipartForm.File["pictures"]
+
+	if files == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "No files provided",
+		})
+		return
+	}
+
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		header := fileHeader
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to open file",
+			})
+			return
+		}
+		file.Close()
+
+		go uploadImageToBucket(header, s3ch, file)
+	}
+
+	var pictureURLs []string
+
+	for i := 0; i < len(files); i++ {
+		pictureURL := <-s3ch
+
+		if pictureURL == "" {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to upload image to  the bucket",
+			})
+			return
+		}
+
+		pictureURLs = append(pictureURLs, pictureURL)
+	}
+
+	if price <= 0 || amount <= 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Price AND/OR amount must be greater than zero",
@@ -38,26 +131,25 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if productRequest.PictureUrl == "" || productRequest.Name == "" || productRequest.Description == "" {
+	if name == "" || description == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Image URL, Name and Description cannot be empty",
+			"error": "Name and Description cannot be empty",
 		})
 		return
 	}
 
 	err = db.DB.QueryRow(`
-				INSERT INTO products (name, amount, price, picture_url, description)
+				INSERT INTO products (name, amount, price, picture_urls, description)
 				VALUES ($1, $2, $3, $4, $5)
 				RETURNING id`,
-		productRequest.Name,
-		productRequest.Amount,
-		productRequest.Price,
-		productRequest.PictureUrl,
-		productRequest.Description).Scan(&product.ID)
+		name,
+		amount,
+		price,
+		pq.StringArray(pictureURLs),
+		description).Scan(&product.ID)
 
 	if err != nil {
-		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to create a product",
@@ -65,11 +157,11 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product.Name = productRequest.Name
-	product.Amount = productRequest.Amount
-	product.Price = productRequest.Price
-	product.PictureUrl = productRequest.PictureUrl
-	product.Description = productRequest.Description
+	product.Name = name
+	product.Amount = amount
+	product.Price = float64(price)
+	product.PictureUrls = pictureURLs
+	product.Description = description
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.Product{
@@ -122,7 +214,9 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var product models.Product
-		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.PictureUrl, &product.Description)
+		var pictureUrls pq.StringArray
+		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls)
+		product.PictureUrls = pictureUrls
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -139,3 +233,35 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		"products": products,
 	})
 }
+
+//func UpdateProduct(w http.ResponseWriter, r *http.Request) {
+//	productIdStr := r.URL.Query().Get("id")
+//	productId, err := uuid.Parse(productIdStr)
+//	var product models.Product
+//
+//	if err != nil {
+//		w.WriteHeader(http.StatusBadRequest)
+//		_ = json.NewEncoder(w).Encode(map[string]string{
+//			"error": "Product ID should be a valid UUID",
+//		})
+//		return
+//	}
+//
+//	err = db.DB.Get(&product, "SELECT * FROM products WHERE id = $1", productId)
+//
+//	if err != nil {
+//		w.WriteHeader(http.StatusNotFound)
+//		_ = json.NewEncoder(w).Encode(map[string]string{
+//			"error": "Product not found",
+//		})
+//		return
+//	}
+//
+//	name := r.FormValue("name")
+//	description := r.FormValue("description")
+//	amount := r.FormValue("amount")
+//	price := r.FormValue("price")
+//
+//	pictures := r.MultipartForm.File["pictures"]
+//
+//}

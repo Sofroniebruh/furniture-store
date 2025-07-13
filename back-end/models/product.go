@@ -8,5 +8,5 @@ type Product struct {
 	Description string    `json:"description" db:"description"`
 	Amount      int       `json:"amount" db:"amount"`
 	Price       float64   `json:"price" db:"price"`
-	PictureUrl  string    `json:"pictureUrl" db:"picture_url"`
+	PictureUrls []string  `json:"pictureUrls" db:"picture_urls"`
 }
