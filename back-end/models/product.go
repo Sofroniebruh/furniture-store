@@ -12,4 +12,6 @@ type Product struct {
 	Amount      int            `json:"amount" db:"amount"`
 	Price       float64        `json:"price" db:"price"`
 	PictureUrls pq.StringArray `json:"pictureUrls" db:"picture_urls"`
+	Event       string         `json:"event" db:"event"`
+	Model       string         `json:"model" db:"model"`
 }

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"furniture-store-backend/db"
@@ -11,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"log"
 	"mime/multipart"
@@ -63,6 +63,8 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
 	description := r.FormValue("description")
+	event := r.FormValue("event")
+	model := r.FormValue("model")
 	price, err := strconv.ParseFloat(r.FormValue("price"), 64)
 
 	if err != nil {
@@ -141,15 +143,25 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if model == "" || event == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Model and Event cannot be empty",
+		})
+		return
+	}
+
 	err = db.DB.QueryRow(`
-				INSERT INTO products (name, amount, price, picture_urls, description)
-				VALUES ($1, $2, $3, $4, $5)
+				INSERT INTO products (name, amount, price, picture_urls, description, event, model)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)
 				RETURNING id`,
 		name,
 		amount,
 		price,
 		pq.StringArray(pictureURLs),
-		description).Scan(&product.ID)
+		description,
+		event,
+		model).Scan(&product.ID)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -164,6 +176,8 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	product.Price = float64(price)
 	product.PictureUrls = pictureURLs
 	product.Description = description
+	product.Event = event
+	product.Model = model
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.Product{
@@ -174,6 +188,49 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
+	priceFromStr := r.URL.Query().Get("price_from")
+	priceToStr := r.URL.Query().Get("price_to")
+	priceFromInt, err := strconv.Atoi(priceFromStr)
+
+	if err != nil && priceFromStr != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse price_from",
+		})
+		return
+	}
+
+	priceToInt, err := strconv.Atoi(priceToStr)
+
+	if err != nil && priceToStr != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse price_to",
+		})
+		return
+	}
+
+	var filters []string
+	params := map[string]interface{}{}
+	event := r.URL.Query().Get("event")
+	model := r.URL.Query().Get("model")
+
+	if event != "" {
+		filters = append(filters, "event = :event")
+		params["event"] = event
+	}
+	if model != "" {
+		filters = append(filters, "model = :model")
+		params["model"] = model
+	}
+	if priceFromStr != "" && priceFromInt > 0 {
+		filters = append(filters, "price >= :price_from")
+		params["price_from"] = priceFromInt
+	}
+	if priceToStr != "" && priceToInt > 0 {
+		filters = append(filters, "price <= :price_to")
+		params["price_to"] = priceToInt
+	}
 
 	page, err := strconv.Atoi(pageStr)
 
@@ -188,14 +245,19 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	offset := (page - 1) * limit
-
+	params["limit"] = limit
+	params["offset"] = offset
 	var products []models.Product
 
-	rows, err := db.DB.Query(`
-				SELECT * FROM products 
-				LIMIT $1 OFFSET $2`, limit, offset)
+	query := "SELECT * FROM products"
+	if len(filters) > 0 {
+		query += " WHERE " + strings.Join(filters, " AND ")
+	}
+	query += " LIMIT :limit OFFSET :offset"
+	rows, err := db.DB.NamedQuery(query, params)
 
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to get products",
@@ -203,7 +265,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func(rows *sql.Rows) {
+	defer func(rows *sqlx.Rows) {
 		err = rows.Close()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -217,7 +279,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var product models.Product
 		var pictureUrls pq.StringArray
-		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls)
+		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
 		product.PictureUrls = pictureUrls
 
 		if err != nil {
@@ -284,6 +346,16 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		updates = append(updates, "description = :description")
 		params["description"] = description
 		product.Description = description
+	}
+	if event := r.FormValue("event"); event != "" {
+		updates = append(updates, "event = :event")
+		params["event"] = event
+		product.Event = event
+	}
+	if model := r.FormValue("model"); model != "" {
+		updates = append(updates, "model = :model")
+		params["model"] = model
+		product.Model = model
 	}
 	if priceStr := r.FormValue("price"); priceStr != "" {
 		price, err := strconv.ParseFloat(priceStr, 64)
