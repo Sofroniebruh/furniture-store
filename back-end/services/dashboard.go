@@ -373,3 +373,41 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		"updated": product,
 	})
 }
+
+func DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	productIdStr := r.URL.Query().Get("id")
+	productId, err := uuid.Parse(productIdStr)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Product ID should be a valid UUID",
+		})
+		return
+	}
+
+	result, err := db.DB.Exec("DELETE FROM products WHERE id = $1", productId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to delete product",
+		})
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if rowsAffected == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Product not found",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Product deleted successfully",
+	})
+}
