@@ -25,6 +25,7 @@ func main() {
 	r.Post("/logout", handlers.Logout)
 	r.Post("/refresh", handlers.Refresh)
 	r.Get("/products", services.GetProducts)
+	r.Put("/products", middleware.Protected(http.HandlerFunc(services.UpdateProduct)))
 
 	r.Post("/products", middleware.Protected(http.HandlerFunc(services.AddProduct)))
 
