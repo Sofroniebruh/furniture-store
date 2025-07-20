@@ -6,6 +6,9 @@ const props = defineProps({
     type: String,
     required: false,
   },
+  isOpen: {
+    type: Boolean,
+  },
   description: {
     type: String,
     required: false,
@@ -23,7 +26,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <Sheet>
+  <Sheet :open="isOpen">
     <SheetTrigger :class="triggerClass">
       <slot name="trigger"/>
     </SheetTrigger>

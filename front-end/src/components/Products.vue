@@ -7,14 +7,17 @@ import Sorting from "@/components/Sorting.vue";
 import {SlidersHorizontal} from 'lucide-vue-next';
 import {Button} from "@/components/ui/button/index.js";
 import SheetGeneral from "@/components/SheetGeneral.vue";
+import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
+
+const smallScreenSheet = useScreenSheetStore()
 </script>
 
 <template>
   <div class="flex flex-col md:flex-row">
     <Wrapper class="md:hidden block">
-      <SheetGeneral title="FUMI" side="left">
+      <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenFiltering')" title="FUMI" side="left">
         <template #trigger>
-          <Button class="cursor-pointer" variant="outline">Filters
+          <Button @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenFiltering'})" class="cursor-pointer" variant="outline">Filters
             <SlidersHorizontal/>
           </Button>
         </template>

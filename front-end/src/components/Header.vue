@@ -6,7 +6,9 @@ import {useRoute} from "vue-router";
 import {computed} from "vue";
 import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button/index.js";
+import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
 
+const smallScreenSheet = useScreenSheetStore()
 const route = useRoute()
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
@@ -16,16 +18,20 @@ const isOnProductsPage = computed(() => route.path === "/products");
 <template>
   <div class="z-50 w-full backdrop-blur-sm bg-white/70 fixed top-0">
     <Wrapper>
-      <div class="grid lg:grid-cols-[328px_1fr_auto] sm:grid-cols-[132px_1fr_auto] grid-cols-3">
-        <SheetGeneral trigger-class="sm:hidden" side="left" title="FUMI">
+      <div
+          :class="cn(isOnProductsPage ? 'grid lg:grid-cols-[328px_1fr_auto] sm:grid-cols-[132px_1fr_auto]' : 'grid grid-cols-3')">
+        <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenMenu')" trigger-class="sm:hidden" side="left"
+                      title="FUMI">
           <template #trigger>
-            <Menu class="order-1 block sm:hidden cursor-pointer col-start-1"/>
+            <Menu @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenMenu'})"
+                  class="order-1 block sm:hidden cursor-pointer col-start-1"/>
           </template>
           <template #content>
             <ul class="p-4">
               <li>
                 <div class=" text-gray-700 hover:text-black">
-                  <router-link to="/products" class="text-2xl flex justify-between w-full items-center">
+                  <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/products"
+                               class="text-2xl flex justify-between w-full items-center">
                     <p class="text-2xl ">Products</p>
                     <ArrowRight/>
                   </router-link>
@@ -33,7 +39,8 @@ const isOnProductsPage = computed(() => route.path === "/products");
               </li>
               <li>
                 <div class="text-gray-700 hover:text-black">
-                  <router-link to="/about" class="text-2xl flex justify-between w-full items-center">
+                  <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/about"
+                               class="text-2xl flex justify-between w-full items-center">
                     About Us
                     <ArrowRight/>
                   </router-link>
@@ -41,7 +48,8 @@ const isOnProductsPage = computed(() => route.path === "/products");
               </li>
               <li>
                 <div class="text-gray-700 hover:text-black">
-                  <router-link to="/contact" class="text-2xl flex w-full justify-between items-center">
+                  <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/contact"
+                               class="text-2xl flex w-full justify-between items-center">
                     Contact Us
                     <ArrowRight/>
                   </router-link>
@@ -82,13 +90,13 @@ const isOnProductsPage = computed(() => route.path === "/products");
           </li>
         </ul>
         <ul class="order-3 col-start-3 flex items-center justify-end gap-3">
-          <li class="relative items-center hidden lg:flex">
-            <input name="search" class="pl-7 border rounded-sm px-2 py-1" type="text" placeholder="Search..."/>
+          <li v-if="isOnProductsPage" class="relative items-center hidden lg:flex">
+            <input name="search" class="pl-7 border rounded-sm px-2 py-1 bg-white" type="text" placeholder="Search..."/>
             <Search class="text-gray-600 absolute top-[5px] left-1"/>
           </li>
-          <SheetGeneral side="top">
+          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenSearch')" side="top">
             <template #trigger>
-              <li class="lg:hidden block">
+              <li @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenSearch'})" class="lg:hidden block">
                 <Search></Search>
               </li>
             </template>
@@ -107,9 +115,9 @@ const isOnProductsPage = computed(() => route.path === "/products");
           <li class="hidden sm:block">
             <Heart></Heart>
           </li>
-          <SheetGeneral title="Your Cart">
+          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="Your Cart">
             <template #trigger>
-              <li>
+              <li @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenCart'})">
                 <ShoppingBag></ShoppingBag>
               </li>
             </template>
