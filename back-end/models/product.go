@@ -14,4 +14,10 @@ type Product struct {
 	PictureUrls pq.StringArray `json:"pictureUrls" db:"picture_urls"`
 	Event       string         `json:"event" db:"event"`
 	Model       string         `json:"model" db:"model"`
+	Colors      []Color        `json:"colors"`
+}
+
+type Color struct {
+	ID   uuid.UUID `json:"id" db:"id"`
+	Name string    `json:"name" db:"name"`
 }

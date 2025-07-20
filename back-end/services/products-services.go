@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"furniture-store-backend/db"
@@ -13,12 +14,26 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"log"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 )
+
+type ProductWithColorRow struct {
+	ProductID   uuid.UUID      `db:"product_id"`
+	Name        string         `db:"name"`
+	Description string         `db:"description"`
+	Amount      int            `db:"amount"`
+	Price       float64        `db:"price"`
+	PictureUrls pq.StringArray `db:"picture_urls"`
+	Event       string         `db:"event"`
+	Model       string         `db:"model"`
+	ColorID     uuid.UUID      `db:"color_id"`
+	ColorName   string         `db:"color_name"`
+}
 
 func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file multipart.File) {
 	s3Client, err := utils.LoadS3Client()
@@ -46,6 +61,37 @@ func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file mu
 	region := os.Getenv("AWS_REGION")
 	key := "public-images/" + header.Filename
 	ch <- fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key)
+}
+
+func GetProductsWithColors(product models.Product) (models.Product, error) {
+	var rows []ProductWithColorRow
+
+	err := db.DB.Select(&rows, `
+		SELECT 
+			p.id AS product_id, p.name, p.description, p.amount, p.price, p.picture_urls, p.event, p.model,
+			c.id AS color_id, c.name AS color_name
+		FROM products p
+		JOIN product_colors pc ON p.id = pc.product_id
+		JOIN colors c ON c.id = pc.color_id
+		WHERE p.id = $1
+	`, product.ID)
+
+	if err != nil {
+		return models.Product{}, err
+	}
+
+	if len(rows) == 0 {
+		return models.Product{}, sql.ErrNoRows
+	}
+
+	for _, row := range rows {
+		product.Colors = append(product.Colors, models.Color{
+			ID:   row.ColorID,
+			Name: row.ColorName,
+		})
+	}
+
+	return product, nil
 }
 
 func AddProduct(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +290,26 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		limit = 12
 	}
 
+	countQuery := "SELECT COUNT(*) FROM products"
+	if len(filters) > 0 {
+		countQuery += " WHERE " + strings.Join(filters, " AND ")
+	}
+
+	var totalCount int = 0
+	statement, err := db.DB.PrepareNamed(countQuery)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to get product count",
+		})
+		return
+	}
+
+	err = statement.Get(&totalCount, params)
+
+	totalPages := int(math.Ceil(float64(totalCount) / float64(limit)))
+
 	offset := (page - 1) * limit
 	params["limit"] = limit
 	params["offset"] = offset
@@ -257,7 +323,6 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.NamedQuery(query, params)
 
 	if err != nil {
-		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to get products",
@@ -281,6 +346,16 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		var pictureUrls pq.StringArray
 		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
 		product.PictureUrls = pictureUrls
+		product, err = GetProductsWithColors(product)
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Internal Server Error",
+			})
+			return
+		}
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -293,8 +368,9 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string][]models.Product{
-		"products": products,
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"products":   products,
+		"totalPages": totalPages,
 	})
 }
 
