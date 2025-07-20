@@ -19,7 +19,7 @@ const className = props.class
 
 <template>
   <div :class="cn('w-full max-w-[300px]', className)">
-    <Wrapper>
+    <Wrapper class="p-0 py-5 sm:p-5">
       <div class="flex flex-col gap-2 items-center">
         <div class="rounded-sm w-[150px] h-[150px] overflow-hidden">
           <img class="w-full h-full object-cover" :src="productImage" alt="product image">
