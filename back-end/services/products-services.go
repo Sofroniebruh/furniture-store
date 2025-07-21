@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"furniture-store-backend/db"
 	"furniture-store-backend/models"
@@ -20,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type ProductWithColorRow struct {
@@ -33,6 +35,10 @@ type ProductWithColorRow struct {
 	Model       string         `db:"model"`
 	ColorID     uuid.UUID      `db:"color_id"`
 	ColorName   string         `db:"color_name"`
+}
+
+type ColorIdDto struct {
+	ID uuid.UUID `json:"id"`
 }
 
 func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file multipart.File) {
@@ -61,6 +67,38 @@ func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file mu
 	region := os.Getenv("AWS_REGION")
 	key := "public-images/" + header.Filename
 	ch <- fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key)
+}
+
+func AddColorsToProduct(productId uuid.UUID, colors []models.Color) (models.Product, error) {
+	var productToAddColors models.Product
+
+	err := db.DB.Get(&productToAddColors, "SELECT * FROM products WHERE id = $1", productId)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Product{}, errors.New("product not found")
+	} else if err != nil {
+		return models.Product{}, err
+	}
+
+	var placeHolders []string
+	var values []interface{}
+
+	for i, color := range colors {
+		placeHolders = append(placeHolders, fmt.Sprintf("($1, $%d)", i+2))
+		values = append(values, color.ID)
+	}
+
+	values = append([]interface{}{productId}, values...)
+	query := fmt.Sprintf("INSERT INTO product_colors (product_id, color_id) VALUES %s ON CONFLICT DO NOTHING", strings.Join(placeHolders, ","))
+	_, err = db.DB.Exec(query, values...)
+
+	productWithColors, err := GetProductsWithColors(productToAddColors)
+
+	if err != nil {
+		return models.Product{}, err
+	}
+
+	return productWithColors, nil
 }
 
 func GetProductsWithColors(product models.Product) (models.Product, error) {
@@ -96,7 +134,7 @@ func GetProductsWithColors(product models.Product) (models.Product, error) {
 
 func AddProduct(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
-	s3ch := make(chan string)
+	var wg sync.WaitGroup
 
 	err := r.ParseMultipartForm(10 << 20)
 
@@ -121,6 +159,18 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	colorsStr := r.FormValue("colors")
+	var colors []models.Color
+	err = json.Unmarshal([]byte(colorsStr), &colors)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse colors",
+		})
+		return
+	}
+
 	amount, err := strconv.Atoi(r.FormValue("amount"))
 
 	if err != nil {
@@ -132,6 +182,8 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files := r.MultipartForm.File["pictures"]
+
+	s3ch := make(chan string, len(files))
 
 	if files == nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -152,10 +204,17 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		file.Close()
 
-		go uploadImageToBucket(header, s3ch, file)
+		wg.Add(1)
+		go func(header *multipart.FileHeader, ch chan<- string, file multipart.File) {
+			defer wg.Done()
+			defer file.Close()
+			uploadImageToBucket(header, s3ch, file)
+		}(header, s3ch, file)
 	}
+
+	wg.Wait()
+	close(s3ch)
 
 	var pictureURLs []string
 
@@ -217,17 +276,22 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product.Name = name
-	product.Amount = amount
-	product.Price = float64(price)
-	product.PictureUrls = pictureURLs
-	product.Description = description
-	product.Event = event
-	product.Model = model
+	productWithColors, err := AddColorsToProduct(product.ID, colors)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to create a product",
+		})
+		return
+	}
+
+	productWithColors.Price = float64(price)
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.Product{
-		"created": product,
+		"created": productWithColors,
 	})
 }
 
@@ -537,6 +601,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	result, err := db.DB.Exec("DELETE FROM products WHERE id = $1", productId)
 
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to delete product",
