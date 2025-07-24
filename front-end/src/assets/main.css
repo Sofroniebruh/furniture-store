@@ -140,3 +140,9 @@ li {
         align-items: center;
     }
 }
+
+@media (max-width: 440px) {
+    .smallScreenSheet {
+        width: 100%;
+    }
+}

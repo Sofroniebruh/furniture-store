@@ -1,9 +1,44 @@
 <script setup>
 
-import {Checkbox} from "@/components/ui/checkbox/index.js";
 import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group'
 import {RangeSlider} from "@/components/ui/range-slider/index.js";
 import {Button} from "@/components/ui/button/index.js";
+import {useParams} from "@/composables/useParams.js";
+import {computed, ref, watch} from "vue";
+import {Check} from 'lucide-vue-next';
+
+let models = ref([])
+const {updateModel, updateEvent, updatePriceTo, updatePriceFrom} = useParams()
+
+const isCheckedTable = computed(() => models.value.some((m) => m === 'table'))
+const isCheckedSofa = computed(() => models.value.some((m) => m === 'sofa'))
+const isCheckedBed = computed(() => models.value.some((m) => m === 'bed'))
+const isCheckedChair = computed(() => models.value.some((m) => m === 'chair'))
+
+const handleNewModel = (model) => {
+  console.log("I am here")
+  const isPresent = models.value.some((m) => m === model)
+
+  console.log(isPresent)
+  console.log(models.value)
+
+  if (isPresent) {
+    models.value = models.value.filter((m) => m !== model)
+    console.log(models.value)
+  } else {
+    models.value = [...models.value, model]
+  }
+}
+
+const handleSearch = () => {
+  updateModel(models.value)
+}
+
+watch(models, (newValue) => {
+  if (window.screen.width >= 768) {
+    updateModel(newValue)
+  }
+}, {immediate: true})
 
 const updatePrices = (prices) => {
   console.log("Prices", prices)
@@ -57,22 +92,79 @@ const updatePrices = (prices) => {
     <div class="flex flex-col gap-3">
       <h1 class="text-base font-semibold">Model</h1>
       <div class="flex gap-1 items-center leading-0">
-        <Checkbox/>
+        <label class="relative flex items-center cursor-pointer">
+          <input
+              name="table"
+              type="checkbox"
+              :checked="isCheckedChair"
+              @change="handleNewModel('chair')"
+              class="peer hidden w-4 h-4"
+          />
+          <span
+              class="w-4 h-4 flex items-center justify-center border border-gray-200 rounded-[4px]
+             peer-checked:bg-[#c9a275] peer-checked:border-transparent"
+          >
+            <span class="text-white text-sm block"><Check class="w-3 h-3"/></span>
+          </span>
+        </label>
         <p class="text-gray-600">Chair</p>
       </div>
       <div class="flex gap-1 items-center leading-0">
-        <Checkbox/>
+        <label class="relative flex items-center cursor-pointer">
+          <input
+              name="table"
+              type="checkbox"
+              :checked="isCheckedBed"
+              @change="handleNewModel('bed')"
+              class="peer hidden w-4 h-4"
+          />
+          <span
+              class="w-4 h-4 flex items-center justify-center border border-gray-200 rounded-[4px]
+             peer-checked:bg-[#c9a275] peer-checked:border-transparent"
+          >
+            <span class="text-white text-sm block"><Check class="w-3 h-3"/></span>
+          </span>
+        </label>
         <p class="text-gray-600">Bed</p>
       </div>
       <div class="flex gap-1 items-center leading-0">
-        <Checkbox/>
+        <label class="relative flex items-center cursor-pointer">
+          <input
+              name="table"
+              type="checkbox"
+              :checked="isCheckedTable"
+              @change="handleNewModel('table')"
+              class="peer hidden w-4 h-4"
+          />
+          <span
+              class="w-4 h-4 flex items-center justify-center border border-gray-200 rounded-[4px]
+             peer-checked:bg-[#c9a275] peer-checked:border-transparent"
+          >
+            <span class="text-white text-sm block"><Check class="w-3 h-3"/></span>
+          </span>
+        </label>
         <p class="text-gray-600">Table</p>
       </div>
       <div class="flex gap-1 items-center leading-0">
-        <Checkbox/>
+        <label class="relative flex items-center cursor-pointer">
+          <input
+              name="table"
+              type="checkbox"
+              :checked="isCheckedSofa"
+              @change="handleNewModel('sofa')"
+              class="peer hidden w-4 h-4"
+          />
+          <span
+              class="w-4 h-4 flex items-center justify-center border border-gray-200 rounded-[4px]
+             peer-checked:bg-[#c9a275] peer-checked:border-transparent"
+          >
+            <span class="text-white text-sm block"><Check class="w-3 h-3"/></span>
+          </span>
+        </label>
         <p class="text-gray-600">Sofa</p>
       </div>
     </div>
-    <Button class="mt-4 w-full cursor-pointer block md:hidden max-w-[200px]">Search</Button>
+    <Button @click="handleSearch" class="mt-4 w-full cursor-pointer block md:hidden max-w-[200px]">Search
+    </Button>
   </div>
 </template>

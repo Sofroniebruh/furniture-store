@@ -29,7 +29,8 @@ const className = props.class
           <div class="flex justify-between items-center">
             <p class="font-bold">{{ productPrice }} &#8364;</p>
             <div class="p-1 px-2 bg-gray-100 rounded-sm">
-              <p>{{ productColorsAmount }} colors</p>
+              <p v-if="productColorsAmount > 1">{{ productColorsAmount }} colors</p>
+              <p v-if="productColorsAmount === 1">{{ productColorsAmount }} color</p>
             </div>
           </div>
         </div>

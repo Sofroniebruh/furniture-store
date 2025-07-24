@@ -19,7 +19,7 @@ const isOnProductsPage = computed(() => route.path === "/products");
   <div class="z-50 w-full backdrop-blur-sm bg-white/70 fixed top-0">
     <Wrapper>
       <div
-          :class="cn(isOnProductsPage ? 'grid lg:grid-cols-[328px_1fr_auto] sm:grid-cols-[132px_1fr_auto]' : 'grid grid-cols-3')">
+          :class="cn(isOnProductsPage ? 'grid lg:grid-cols-[minmax(200px,328px)_1fr_minmax(100px,auto)] sm:grid-cols-[minmax(80px,132px)_1fr_minmax(80px,auto)]' : 'grid grid-cols-[1fr_3fr_1fr]')">
         <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenMenu')" trigger-class="sm:hidden" side="left"
                       title="FUMI">
           <template #trigger>
@@ -96,7 +96,8 @@ const isOnProductsPage = computed(() => route.path === "/products");
           </li>
           <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenSearch')" side="top">
             <template #trigger>
-              <li @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenSearch'})" class="lg:hidden block">
+              <li v-if="isOnProductsPage" @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenSearch'})"
+                  class="lg:hidden block">
                 <Search></Search>
               </li>
             </template>
