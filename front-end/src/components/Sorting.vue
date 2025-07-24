@@ -16,15 +16,10 @@ const isCheckedBed = computed(() => models.value.some((m) => m === 'bed'))
 const isCheckedChair = computed(() => models.value.some((m) => m === 'chair'))
 
 const handleNewModel = (model) => {
-  console.log("I am here")
   const isPresent = models.value.some((m) => m === model)
-
-  console.log(isPresent)
-  console.log(models.value)
 
   if (isPresent) {
     models.value = models.value.filter((m) => m !== model)
-    console.log(models.value)
   } else {
     models.value = [...models.value, model]
   }

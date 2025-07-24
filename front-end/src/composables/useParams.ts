@@ -37,7 +37,6 @@ export const useParams = () => {
         })
     }
     const updateModel = (models: []) => {
-        console.log(models)
         router.push({
             query: {
                 ...route.query,
