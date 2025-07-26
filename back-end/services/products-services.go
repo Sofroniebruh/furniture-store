@@ -297,6 +297,7 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
+	sorting := r.URL.Query().Get("sorting")
 	limitStr := r.URL.Query().Get("limit")
 	priceFromStr := r.URL.Query().Get("price_from")
 	priceToStr := r.URL.Query().Get("price_to")
@@ -322,13 +323,8 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	var filters []string
 	params := map[string]interface{}{}
-	event := r.URL.Query().Get("event")
 	model := r.URL.Query().Get("model")
 
-	if event != "" {
-		filters = append(filters, "event = :event")
-		params["event"] = event
-	}
 	if model != "" {
 		filters = append(filters, "model = :model")
 		params["model"] = model
@@ -341,6 +337,10 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		filters = append(filters, "price <= :price_to")
 		params["price_to"] = priceToInt
 	}
+	if sorting == "sale" {
+		filters = append(filters, "event = :event")
+		params["event"] = "sale"
+	}
 
 	page, err := strconv.Atoi(pageStr)
 
@@ -351,7 +351,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	limit, err := strconv.Atoi(limitStr)
 
 	if err != nil || limit < 12 {
-		limit = 12
+		limit = 2
 	}
 
 	countQuery := "SELECT COUNT(*) FROM products"
@@ -378,15 +378,27 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	params["limit"] = limit
 	params["offset"] = offset
 	var products []models.Product
-
 	query := "SELECT * FROM products"
+
 	if len(filters) > 0 {
 		query += " WHERE " + strings.Join(filters, " AND ")
 	}
+
+	if sorting != "" {
+		switch sorting {
+		case "htl":
+			query += " ORDER BY price DESC"
+		case "lth":
+			query += " ORDER BY price ASC"
+		}
+	}
+
 	query += " LIMIT :limit OFFSET :offset"
+
 	rows, err := db.DB.NamedQuery(query, params)
 
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to get products",
