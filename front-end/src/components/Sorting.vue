@@ -1,18 +1,20 @@
 <script setup>
 
-import {RangeSlider} from "@/components/ui/range-slider/index.js";
 import {Button} from "@/components/ui/button/index.js";
 import {useParams} from "@/composables/useParams.ts";
 import {computed, watch} from "vue";
 import {Check} from 'lucide-vue-next';
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 import {useSortingStore} from "@/stores/useSortingStore.js";
+import PriceRange from "@/components/PriceRange.vue";
 
 const sortingStore = useSortingStore();
+
+const priceRange = computed(() => sortingStore.priceRange)
 const models = computed(() => sortingStore.models);
 const sortingType = computed(() => sortingStore.sorting)
 
-const {updateModel, updateEvent, updatePriceTo, updatePriceFrom, updateSorting} = useParams()
+const {updateModel, updateSorting, updatePriceRange} = useParams()
 const {setAllSheetsClosed} = useScreenSheetStore()
 
 if (window.innerWidth >= 768) {
@@ -34,26 +36,31 @@ const handleNewModel = (model) => {
   }
 }
 
-const handleSearch = () => {
+const handleSearch = async () => {
   setAllSheetsClosed()
-  updateModel(models.value)
-  updateSorting(sortingType.value)
+
+  if (window.innerWidth < 768) {
+    await updateModel(models.value)
+    await updateSorting(sortingType.value)
+    await updatePriceRange(priceRange.value[0], priceRange.value[1])
+  }
 }
 
 watch(models, (newValue) => {
   if (window.innerWidth >= 768) {
     updateModel(newValue)
   }
-}, {immediate: true})
+})
 watch(sortingType, (newValue) => {
   if (window.innerWidth >= 768) {
     updateSorting(newValue)
   }
-}, {immediate: true})
-
-const updatePrices = (prices) => {
-  console.log("Prices", prices)
-}
+})
+watch(priceRange, (newValue) => {
+  if (window.innerWidth >= 768) {
+    updatePriceRange(newValue)
+  }
+})
 </script>
 
 <template>
@@ -72,28 +79,7 @@ const updatePrices = (prices) => {
     </div>
     <div class="flex flex-col gap-3 mb-2">
       <h1 class="text-base font-semibold">Price range</h1>
-      <div class="flex flex-col gap-6">
-        <div class="flex gap-2 max-w-[200px]">
-          <input name="priceFrom"
-                 class="appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 text-gray-600 w-full border rounded-sm p-1 text-sm px-2"
-                 placeholder="From..."
-                 type="number"
-                 :max="1500"
-                 :min="0"
-          >
-          <input name="priceTo"
-                 class="appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 text-gray-600 w-full border rounded-sm p-1 px-2 text-sm"
-                 placeholder="To..."
-                 type="number"
-                 :max="1500"
-                 :min="0"
-          >
-        </div>
-        <div class="max-w-[200px]">
-          <RangeSlider :min="0" :max="1500" :step="1" :model-value="[0, 1500]"
-                       :on-value-change="updatePrices"></RangeSlider>
-        </div>
-      </div>
+      <PriceRange></PriceRange>
     </div>
     <div class="flex flex-col gap-3">
       <h1 class="text-base font-semibold">Model</h1>

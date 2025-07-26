@@ -4,48 +4,41 @@ export const useParams = () => {
     const route = useRoute()
     const router = useRouter()
 
-    const updatePage = (page: number) => {
-        router.push({
+    const updatePage = async (page: number) => {
+        await router.push({
             query: {
                 ...route.query,
                 page: page.toString(),
             }
         })
     }
-    const updatePriceFrom = (price: number) => {
-        router.push({
+    const updatePriceRange = async (priceFrom: number, priceTo: number) => {
+        await router.push({
             query: {
                 ...route.query,
-                price_from: price.toString(),
+                price_from: priceFrom.toString(),
+                price_to: priceTo.toString(),
             }
         })
     }
-    const updatePriceTo = (price: number) => {
-        router.push({
-            query: {
-                ...route.query,
-                price_to: price.toString(),
-            }
-        })
-    }
-    const updateEvent = (event: string) => {
-        router.push({
+    const updateEvent = async (event: string) => {
+        await router.push({
             query: {
                 ...route.query,
                 event: event,
             }
         })
     }
-    const updateModel = (models: []) => {
-        router.push({
+    const updateModel = async (models: []) => {
+        await router.push({
             query: {
                 ...route.query,
                 model: models,
             }
         })
     }
-    const updateSorting = (sortingType: string) => {
-        router.push({
+    const updateSorting = async (sortingType: string) => {
+        await router.push({
             query: {
                 ...route.query,
                 sorting: sortingType,
@@ -56,8 +49,7 @@ export const useParams = () => {
     return {
         updateEvent,
         updatePage,
-        updatePriceFrom,
-        updatePriceTo,
+        updatePriceRange,
         updateModel,
         updateSorting,
     }

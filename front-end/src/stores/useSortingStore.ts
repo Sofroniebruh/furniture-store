@@ -4,6 +4,7 @@ export const useSortingStore = defineStore("sortingStore", {
     state: () => ({
         models: [] as string[],
         sorting: "",
+        priceRange: [] as number[]
     }),
     actions: {
         addModel(model: string) {
@@ -15,5 +16,9 @@ export const useSortingStore = defineStore("sortingStore", {
         addSorting(sortingType: string) {
             this.sorting = sortingType;
         },
+        addPriceRange(priceFrom: number, priceTo: number) {
+            this.priceRange[0] = priceFrom;
+            this.priceRange[1] = priceTo;
+        }
     }
 })
