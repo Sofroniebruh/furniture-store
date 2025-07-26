@@ -22,6 +22,7 @@ export function useProducts() {
         priceTo: Number(route.query.price_to) || null,
         event: route.query.event || null,
         model: route.query.model || null,
+        sorting: route.query.sorting || null,
     }))
 
     const setPage = async (pageNumber: number) => {
@@ -39,6 +40,7 @@ export function useProducts() {
         if (filters.value.priceTo) queryParams.set("price_to", filters.value.priceTo.toString())
         if (filters.value.event) queryParams.set("event", filters.value.event.toString())
         if (filters.value.model) queryParams.set("model", filters.value.model.toString())
+        if (filters.value.sorting) queryParams.set("sorting", filters.value.sorting.toString())
 
         const baseUrl = computed(() => `${backendUrl}/products?${queryParams.toString()}`)
 

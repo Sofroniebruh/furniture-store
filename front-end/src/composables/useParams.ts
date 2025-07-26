@@ -44,6 +44,14 @@ export const useParams = () => {
             }
         })
     }
+    const updateSorting = (sortingType: string) => {
+        router.push({
+            query: {
+                ...route.query,
+                sorting: sortingType,
+            }
+        })
+    }
 
     return {
         updateEvent,
@@ -51,5 +59,6 @@ export const useParams = () => {
         updatePriceFrom,
         updatePriceTo,
         updateModel,
+        updateSorting,
     }
 }

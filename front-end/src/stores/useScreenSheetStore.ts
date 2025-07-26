@@ -7,7 +7,6 @@ type ScreenSheet = {
 export const useScreenSheetStore = defineStore("smallScreenSheetStore", {
         state: () => ({
             sheets: [] as ScreenSheet[],
-
         }),
         actions: {
             setOpenSheet(open: boolean, sheet: ScreenSheet) {

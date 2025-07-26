@@ -51,7 +51,8 @@ watch(products.value, (newValue) => {
           <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>
         </div>
       </div>
-      <div class="flex justify-center items-center sm:h-full h-[calc(100vh-244px-64px-76px)]" v-else-if="products === undefined || products === null">
+      <div class="flex justify-center items-center md:h-full h-[calc(100vh-244px-64px-76px)]"
+           v-else-if="products === undefined || products === null">
         <h1 class="font-semibold text-base sm:text-lg">No products matching your request</h1>
       </div>
       <div v-else-if="error" class="text-center py-8">

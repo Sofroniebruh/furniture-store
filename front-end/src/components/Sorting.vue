@@ -1,14 +1,23 @@
 <script setup>
 
-import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group'
 import {RangeSlider} from "@/components/ui/range-slider/index.js";
 import {Button} from "@/components/ui/button/index.js";
-import {useParams} from "@/composables/useParams.js";
-import {computed, ref, watch} from "vue";
+import {useParams} from "@/composables/useParams.ts";
+import {computed, watch} from "vue";
 import {Check} from 'lucide-vue-next';
+import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
+import {useSortingStore} from "@/stores/useSortingStore.js";
 
-let models = ref([])
-const {updateModel, updateEvent, updatePriceTo, updatePriceFrom} = useParams()
+const sortingStore = useSortingStore();
+const models = computed(() => sortingStore.models);
+const sortingType = computed(() => sortingStore.sorting)
+
+const {updateModel, updateEvent, updatePriceTo, updatePriceFrom, updateSorting} = useParams()
+const {setAllSheetsClosed} = useScreenSheetStore()
+
+if (window.innerWidth >= 768) {
+  setAllSheetsClosed()
+}
 
 const isCheckedTable = computed(() => models.value.some((m) => m === 'table'))
 const isCheckedSofa = computed(() => models.value.some((m) => m === 'sofa'))
@@ -19,19 +28,26 @@ const handleNewModel = (model) => {
   const isPresent = models.value.some((m) => m === model)
 
   if (isPresent) {
-    models.value = models.value.filter((m) => m !== model)
+    sortingStore.removeModel(model)
   } else {
-    models.value = [...models.value, model]
+    sortingStore.addModel(model)
   }
 }
 
 const handleSearch = () => {
+  setAllSheetsClosed()
   updateModel(models.value)
+  updateSorting(sortingType.value)
 }
 
 watch(models, (newValue) => {
-  if (window.screen.width >= 768) {
+  if (window.innerWidth >= 768) {
     updateModel(newValue)
+  }
+}, {immediate: true})
+watch(sortingType, (newValue) => {
+  if (window.innerWidth >= 768) {
+    updateSorting(newValue)
   }
 }, {immediate: true})
 
@@ -44,20 +60,15 @@ const updatePrices = (prices) => {
   <div class="sticky top-[88px]">
     <div class="flex flex-col gap-3 mb-2">
       <h1 class="text-base font-semibold">Sort by</h1>
-      <RadioGroup default-value="option-one">
-        <div class="flex items-center space-x-1.5">
-          <RadioGroupItem id="l-t-h" value="l-t-h"/>
-          <Label class="text-gray-600" for="l-t-h">Price: low to high</Label>
+      <div class="flex flex-col gap-3 mb-2">
+        <div class="space-x-1.5" v-for="(sorting, index) in ['lth', 'htl', 'sale']">
+          <input @click="sortingStore.addSorting(sorting)" :checked="sortingType === sorting" :key="index" type="radio"
+                 :name="sorting" :id="sorting" :value="sorting">
+          <label v-if="sorting === 'lth'" :key="index" :for="sorting">Price: Low to High</label>
+          <label v-if="sorting === 'htl'" :key="index" :for="sorting">Price: High to Low</label>
+          <label v-if="sorting === 'sale'" :key="index" :for="sorting">Sale</label>
         </div>
-        <div class="flex items-center space-x-1.5">
-          <RadioGroupItem id="h-t-l" value="h-t-l"/>
-          <Label class="text-gray-600" for="h-t-l">Price: high to low</Label>
-        </div>
-        <div class="flex items-center space-x-1.5">
-          <RadioGroupItem id="on-sale" value="on-sale"/>
-          <Label class="text-gray-600" for="on-sale">On sale</Label>
-        </div>
-      </RadioGroup>
+      </div>
     </div>
     <div class="flex flex-col gap-3 mb-2">
       <h1 class="text-base font-semibold">Price range</h1>
