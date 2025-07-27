@@ -2,17 +2,44 @@
 
 import {Button} from "@/components/ui/button/index.js";
 import {useParams} from "@/composables/useParams.ts";
-import {computed, watch} from "vue";
+import {computed, onMounted, watch} from "vue";
 import {Check} from 'lucide-vue-next';
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 import {useSortingStore} from "@/stores/useSortingStore.js";
 import PriceRange from "@/components/PriceRange.vue";
+import {useRoute} from 'vue-router'
 
 const sortingStore = useSortingStore();
 
 const priceRange = computed(() => sortingStore.priceRange)
 const models = computed(() => sortingStore.models);
 const sortingType = computed(() => sortingStore.sorting)
+
+const route = useRoute()
+
+onMounted(() => {
+  let modelParam = route.query.model
+  if (Array.isArray(modelParam)) {
+    sortingStore.models = modelParam
+  } else if (typeof modelParam === 'string') {
+    sortingStore.models = [modelParam]
+  } else {
+    sortingStore.models = []
+  }
+
+  if (typeof route.query.sorting === 'string') {
+    sortingStore.sorting = route.query.sorting
+  } else {
+    sortingStore.sorting = ""
+  }
+
+  let priceFrom = Number(route.query.price_from)
+  let priceTo = Number(route.query.price_to)
+  sortingStore.priceRange = [
+    !isNaN(priceFrom) ? priceFrom : 0,
+    !isNaN(priceTo) ? priceTo : 1500
+  ]
+})
 
 const {updateModel, updateSorting, updatePriceRange} = useParams()
 const {setAllSheetsClosed} = useScreenSheetStore()
@@ -58,7 +85,7 @@ watch(sortingType, (newValue) => {
 })
 watch(priceRange, (newValue) => {
   if (window.innerWidth >= 768) {
-    updatePriceRange(newValue)
+    updatePriceRange(newValue[0], newValue[1])
   }
 })
 </script>
