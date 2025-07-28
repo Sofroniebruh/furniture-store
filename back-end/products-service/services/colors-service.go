@@ -2,11 +2,11 @@ package services
 
 import (
 	"encoding/json"
-	"furniture-store-backend/db"
-	"furniture-store-backend/models"
 	"github.com/google/uuid"
 	"log"
 	"net/http"
+	"products-service/db"
+	"products-service/models"
 )
 
 func CreateColor(w http.ResponseWriter, r *http.Request) {

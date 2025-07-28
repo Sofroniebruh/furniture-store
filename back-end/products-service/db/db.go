@@ -1,9 +1,9 @@
 package db
 
 import (
-	"furniture-store-backend/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"products-service/config"
 )
 
 var DB *sqlx.DB

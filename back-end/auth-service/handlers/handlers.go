@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"auth-service/config"
+	"auth-service/db"
+	"auth-service/models"
+	"auth-service/utils"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"furniture-store-backend/config"
-	"furniture-store-backend/db"
-	"furniture-store-backend/models"
-	"furniture-store-backend/utils"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"

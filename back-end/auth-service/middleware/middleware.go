@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"auth-service/config"
+	"auth-service/utils"
 	"context"
 	"encoding/json"
-	"furniture-store-backend/config"
-	"furniture-store-backend/utils"
 	"net/http"
 )
 

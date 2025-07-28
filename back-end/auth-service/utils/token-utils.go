@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"auth-service/config"
 	"errors"
-	"furniture-store-backend/config"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"net/http"
