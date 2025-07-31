@@ -1,0 +1,65 @@
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./auth-service/.env
+    networks:
+      - private
+    depends_on:
+      - db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672" 
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - private
+
+  lambda-bridge:
+    build: ./python-bridge-lambda
+    container_name: lambda-bridge
+    env_file:
+      - ./python-bridge-lambda/.env
+    depends_on:
+      - rabbitmq
+    restart: on-failure
+    networks:
+      - private
+  
+  db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "5433:5432"
+    networks:
+      - private
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  products-service:
+    build: ./products-service
+    ports:
+      - "8081:8080"
+    env_file:
+      - ./products-service/.env
+    networks:
+      - private
+    depends_on:
+      - db
+
+networks:
+  private:
+    driver: bridge
+
+volumes:
+  pgdata:

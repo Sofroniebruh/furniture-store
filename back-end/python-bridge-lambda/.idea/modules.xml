@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/furniture-store-backend.iml" filepath="$PROJECT_DIR$/.idea/furniture-store-backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/python-bridge-lambda.iml" filepath="$PROJECT_DIR$/.idea/python-bridge-lambda.iml" />
     </modules>
   </component>
 </project>
