@@ -28,7 +28,7 @@ var rabbitData struct {
 func Signup(w http.ResponseWriter, r *http.Request) {
 	var existingUser models.User
 	var user models.User
-	ch, err := config.InitRabbitMq("verify_email")
+	conn, ch, err := config.InitRabbitMq()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -82,6 +82,23 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	verificationEmailToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
+	rabbitData.Email = userInfoRequest.Email
+	rabbitData.Token = verificationEmailToken
+
+	err = config.ProduceMessage(ch, "verifyEmail", rabbitData)
+
+	defer conn.Close()
+	defer ch.Close()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to send email: " + err.Error(),
+		})
+		return
+	}
+
 	err = db.DB.QueryRow(`
 		INSERT INTO users (username, email, password, created_at)
 		VALUES ($1, $2, $3, $4)
@@ -98,20 +115,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
 	refreshToken, _ := utils.GenerateToken(user.ID, config.REFRESH_TOKEN_TTL)
-	verificationEmailToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
-
-	rabbitData.Email = userInfoRequest.Email
-	rabbitData.Token = verificationEmailToken
-
-	err = config.ProduceMessage(ch, "verifyEmail", rabbitData)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to send email: " + err.Error(),
-		})
-		return
-	}
 
 	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1, verification_on_signup_token = $2 WHERE id = $3", refreshToken, verificationEmailToken, user.ID)
 
@@ -140,6 +143,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	user.Username = userInfoRequest.Username
 	user.Email = userInfoRequest.Email
+	user.VerificationOnSignupToken = verificationEmailToken
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{

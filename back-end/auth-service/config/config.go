@@ -31,23 +31,21 @@ func init() {
 	JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
 }
 
-func InitRabbitMq(queueName string) (*amqp091.Channel, error) {
+func InitRabbitMq() (*amqp091.Connection, *amqp091.Channel, error) {
 	RabbitUrl := os.Getenv("RABBIT_URL")
 	conn, err := amqp091.Dial(RabbitUrl)
 
 	if err != nil {
-		return nil, errors.New("failed to initialize RabbitMQ: " + err.Error())
+		return nil, nil, errors.New("failed to initialize RabbitMQ: " + err.Error())
 	}
 
 	ch, err := conn.Channel()
 
 	if err != nil {
-		return nil, errors.New("failed to open channel: " + err.Error())
+		return nil, nil, errors.New("failed to open channel: " + err.Error())
 	}
 
-	defer ch.Close()
-
-	return ch, nil
+	return conn, ch, nil
 }
 
 func ProduceMessage[T any](ch *amqp091.Channel, queueName string, body T) error {
