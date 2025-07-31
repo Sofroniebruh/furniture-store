@@ -1,7 +1,10 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
 	"github.com/joho/godotenv"
+	"github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
 	"time"
@@ -26,4 +29,60 @@ func init() {
 
 	DB_URL = os.Getenv("DATABASE_URL")
 	JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
+}
+
+func InitRabbitMq(queueName string) (*amqp091.Channel, error) {
+	RabbitUrl := os.Getenv("RABBIT_URL")
+	conn, err := amqp091.Dial(RabbitUrl)
+
+	if err != nil {
+		return nil, errors.New("failed to initialize RabbitMQ: " + err.Error())
+	}
+
+	ch, err := conn.Channel()
+
+	if err != nil {
+		return nil, errors.New("failed to open channel: " + err.Error())
+	}
+
+	defer ch.Close()
+
+	return ch, nil
+}
+
+func ProduceMessage[T any](ch *amqp091.Channel, queueName string, body T) error {
+	q, err := ch.QueueDeclare(
+		queueName,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	if err != nil {
+		return errors.New("failed to declare a queue: " + err.Error())
+	}
+
+	data, err := json.Marshal(body)
+
+	if err != nil {
+		return errors.New("failed to marshal body: " + err.Error())
+	}
+
+	err = ch.Publish(
+		"",
+		q.Name,
+		false,
+		false,
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        data,
+		})
+
+	if err != nil {
+		return errors.New("failed to publish a message: " + err.Error())
+	}
+
+	return nil
 }

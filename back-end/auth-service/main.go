@@ -31,11 +31,11 @@ func main() {
 	r.Post("/logout", handlers.Logout)
 	r.Post("/refresh", handlers.Refresh)
 
-	log.Println("Listening on port 8081")
-	err = http.ListenAndServe(":8081", handler)
+	log.Println("Listening on port 8080")
+	err = http.ListenAndServe(":8080", handler)
 
 	if err != nil {
-		log.Fatal("Failed listening on port 8081: ", err)
+		log.Fatal("Failed listening on port 8080: ", err)
 		return
 	}
 }
