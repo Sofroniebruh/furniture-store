@@ -45,6 +45,14 @@ export const useParams = () => {
             }
         })
     }
+    const updateProductName = async (productName: string) => {
+        await router.push({
+            query: {
+                ...route.query,
+                product_name: productName,
+            }
+        })
+    }
 
     return {
         updateEvent,
@@ -52,5 +60,6 @@ export const useParams = () => {
         updatePriceRange,
         updateModel,
         updateSorting,
+        updateProductName,
     }
 }

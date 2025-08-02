@@ -23,6 +23,7 @@ export function useProducts() {
         event: route.query.event || null,
         model: route.query.model || null,
         sorting: route.query.sorting || null,
+        productName: route.query.product_name || null,
     }))
 
     const setPage = async (pageNumber: number) => {
@@ -36,6 +37,7 @@ export function useProducts() {
 
         queryParams.set("page", filters.value.page.toString())
         queryParams.set("limit", limit)
+        if (filters.value.productName) queryParams.set("product_name", filters.value.productName.toString())
         if (filters.value.priceFrom) queryParams.set("price_from", filters.value.priceFrom.toString())
         if (filters.value.priceTo) queryParams.set("price_to", filters.value.priceTo.toString())
         if (filters.value.event) queryParams.set("event", filters.value.event.toString())

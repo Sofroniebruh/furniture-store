@@ -3,16 +3,41 @@ import Wrapper from "@/components/Wrapper.vue";
 import {ArrowRight, Heart, Menu, Search, ShoppingBag, User} from 'lucide-vue-next';
 import SheetGeneral from "@/components/SheetGeneral.vue";
 import {useRoute} from "vue-router";
-import {computed} from "vue";
+import {computed, ref, watch} from "vue";
 import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button/index.js";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
+import {useParams} from "@/composables/useParams.js";
 
 const smallScreenSheet = useScreenSheetStore()
 const route = useRoute()
+const {updateProductName} = useParams()
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
 const isOnProductsPage = computed(() => route.path === "/products");
+
+const productName = ref("")
+const timeout = ref(null)
+
+const handleChange = (value) => {
+  productName.value = value;
+}
+
+const handleSearch = () => {
+  smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenSearch'})
+  updateProductName(productName.value);
+}
+
+watch(productName, (newValue) => {
+  if (window.innerWidth >= 1024) {
+    if (timeout.value) clearTimeout(timeout.value)
+
+    timeout.value = setTimeout(() => {
+      updateProductName(newValue);
+    }, 500)
+  }
+})
+
 </script>
 
 <template>
@@ -91,7 +116,8 @@ const isOnProductsPage = computed(() => route.path === "/products");
         </ul>
         <ul class="order-3 col-start-3 flex items-center justify-end gap-3">
           <li v-if="isOnProductsPage" class="relative items-center hidden lg:flex">
-            <input name="search" class="pl-7 border rounded-sm px-2 py-1 bg-white" type="text" placeholder="Search..."/>
+            <input v-model="productName" name="search" class="pl-7 border rounded-sm px-2 py-1 bg-white" type="text"
+                   placeholder="Search..."/>
             <Search class="text-gray-600 absolute top-[5px] left-1"/>
           </li>
           <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenSearch')" side="top">
@@ -103,10 +129,12 @@ const isOnProductsPage = computed(() => route.path === "/products");
             </template>
             <template #content>
               <div class="relative items-center w-full flex p-5 pt-0 gap-3">
-                <input name="search" class="pl-7 border w-full rounded-sm px-2 py-1" type="text"
+                <input @change="(e) => handleChange(e.target.value)" name="search"
+                       class="pl-7 border w-full rounded-sm px-2 py-1" type="text"
                        placeholder="Search..."/>
                 <Search class="text-gray-600 absolute top-[5px] left-6"/>
-                <Button class="bg-[#c9a275] h-[34px] cursor-pointer hover:bg-[#dbb384]">Go</Button>
+                <Button @click="handleSearch" class="bg-[#c9a275] h-[34px] cursor-pointer hover:bg-[#dbb384]">Go
+                </Button>
               </div>
             </template>
           </SheetGeneral>
