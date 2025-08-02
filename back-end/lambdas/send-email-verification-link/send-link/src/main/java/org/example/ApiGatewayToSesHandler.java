@@ -50,6 +50,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
         }
         catch (Exception e)
         {
+            System.out.println(e);
             return false;
         }
     }
@@ -70,23 +71,28 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
         {
             EmailPOJO emailPOJO = objectMapper.readValue(request.getBody(), EmailPOJO.class);
             String receiverEmail = emailPOJO.getEmail();
+            String body = emailPOJO.getMessageBody();
             String emailBody;
             String subject = emailPOJO.getSubject();
 
             if (subject.equalsIgnoreCase("verify your email"))
             {
-                emailBody = "Please go to the following url to verify your email: " + emailPOJO.getBody();
+                emailBody = "Please go to the following url to verify your email: " + body;
             }
             else if (subject.equalsIgnoreCase("reset your password"))
             {
-                emailBody = "Please go to the following url to reset your password: " + emailPOJO.getBody();
+                emailBody = "Please go to the following url to reset your password: " + body;
             }
             else
             {
-                emailBody = emailPOJO.getBody();
+                emailBody = body;
             }
 
-            if (!sendEmail(receiverEmail, subject, emailBody)) throw new Exception();
+            System.out.println(receiverEmail);
+            System.out.println(emailBody);
+            System.out.println(subject);
+
+            if (!sendEmail(receiverEmail, subject, emailBody)) throw new CustomException("Something went wrong");
 
             String value = convertValueToJson("message", "Email was sent successfully");
 

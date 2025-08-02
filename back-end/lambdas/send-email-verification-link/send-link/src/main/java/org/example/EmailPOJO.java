@@ -3,17 +3,17 @@ package org.example;
 public class EmailPOJO
 {
     private String email;
-    private String body;
+    private String messageBody;
     private String subject;
 
     public EmailPOJO()
     {
     }
 
-    public EmailPOJO(String email, String body, String subject)
+    public EmailPOJO(String email, String messageBody, String subject)
     {
         this.email = email;
-        this.body = body;
+        this.messageBody = messageBody;
         this.subject = subject;
     }
 
@@ -27,14 +27,14 @@ public class EmailPOJO
         this.email = email;
     }
 
-    public String getBody()
+    public String getMessageBody()
     {
-        return body;
+        return messageBody;
     }
 
-    public void setBody(String body)
+    public void setMessageBody(String messageBody)
     {
-        this.body = body;
+        this.messageBody = messageBody;
     }
 
     public String getSubject()
