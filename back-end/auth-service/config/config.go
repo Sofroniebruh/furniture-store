@@ -82,9 +82,6 @@ func ProduceMessage[T any](requestQueue amqp091.Queue, replyQueue amqp091.Queue,
 		return errors.New("failed to marshal body: " + err.Error())
 	}
 
-	log.Println("ID", stringCorrelationId)
-	log.Println("Reply", replyQueue.Name)
-
 	err = ch.Publish(
 		"",
 		requestQueue.Name,
@@ -108,7 +105,6 @@ func WaitForResponseQueue(ch *amqp091.Channel, queueName string, correlationId u
 	timeout := time.Second * 30
 	consumerTag := fmt.Sprintf("consumer-tag-%s", correlationId)
 	stringCorrelationId := correlationId.String()
-	println("ID: ", stringCorrelationId)
 
 	msgs, err := ch.Consume(
 		queueName,
@@ -124,8 +120,6 @@ func WaitForResponseQueue(ch *amqp091.Channel, queueName string, correlationId u
 		return nil, fmt.Errorf("failed to consume from response queue: %w", err)
 	}
 
-	log.Println("goida")
-
 	defer ch.Cancel(consumerTag, false)
 
 	timer := time.NewTimer(timeout)
@@ -134,8 +128,6 @@ func WaitForResponseQueue(ch *amqp091.Channel, queueName string, correlationId u
 	for {
 		select {
 		case msg, ok := <-msgs:
-			log.Println("Received a message: ", string(msg.Body), msg.CorrelationId)
-			log.Println(msg.CorrelationId == stringCorrelationId)
 			if !ok {
 				return nil, errors.New("failed to receive a message from response queue")
 			}
