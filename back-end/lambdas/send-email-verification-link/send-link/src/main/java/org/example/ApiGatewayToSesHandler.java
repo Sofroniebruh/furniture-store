@@ -88,10 +88,6 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
                 emailBody = body;
             }
 
-            System.out.println(receiverEmail);
-            System.out.println(emailBody);
-            System.out.println(subject);
-
             if (!sendEmail(receiverEmail, subject, emailBody)) throw new CustomException("Something went wrong");
 
             String value = convertValueToJson("message", "Email was sent successfully");
