@@ -29,6 +29,8 @@ def main():
         try:
             data = send_data(decoded_body)
 
+            print("Data: ", data)
+
             status_code = data.get('statusCode')
             data_body = data.get('body')
 
@@ -58,12 +60,16 @@ def main():
 def send_data(decoded_body):
     headers = {
         'Content-Type': 'application/json',
+        "x-api-key": API_GATEWAY_KEY,
     }
     url = API_GATEWAY_URL + "/process-data-to-ses"
 
     api_gateway_event = {
         "body": decoded_body,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": API_GATEWAY_KEY,
+        },
         "httpMethod": "POST",
         "isBase64Encoded": False
     }
