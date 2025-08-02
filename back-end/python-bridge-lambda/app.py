@@ -23,7 +23,33 @@ def main():
 
     def callback(ch, method, properties, body):
         decoded_body = body.decode('utf-8')
-        send_data(decoded_body)
+        reply_to = properties.reply_to
+        correlation_id = properties.correlation_id
+
+        try:
+            data = send_data(decoded_body)
+
+            status_code = data.get('statusCode')
+            data_body = data.get('body')
+
+            response_body = json.dumps({
+                "status_code": status_code,
+                "data": data_body,
+            })
+        except Exception as e:
+            response_body = json.dumps({
+                "error": str(e)
+            })
+
+        ch.basic_publish(
+            exchange='',
+            routing_key=reply_to,
+            properties=pika.BasicProperties(
+                correlation_id=correlation_id,
+                content_type='application/json'
+            ),
+            body=response_body.encode('utf-8')
+        )
 
     channel.basic_consume(queue='verifyEmail', auto_ack=True, on_message_callback=callback)
     channel.start_consuming()
@@ -32,17 +58,19 @@ def main():
 def send_data(decoded_body):
     headers = {
         'Content-Type': 'application/json',
-        'x-api-key': API_GATEWAY_KEY,
     }
-    payload = json.loads(decoded_body)
-    url = API_GATEWAY_URL + "/forward-data-to-email-service"
+    url = API_GATEWAY_URL + "/process-data-to-ses"
 
-    response = requests.post(url, headers=headers, json=payload)
+    api_gateway_event = {
+        "body": decoded_body,
+        "headers": {"Content-Type": "application/json"},
+        "httpMethod": "POST",
+        "isBase64Encoded": False
+    }
 
-    return jsonify({
-        "status": response.status_code,
-        "body": response.json()
-    })
+    response = requests.post(url, headers=headers, json=api_gateway_event)
+
+    return response.json()
 
 
 if __name__ == '__main__':
