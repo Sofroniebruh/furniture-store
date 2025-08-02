@@ -21,9 +21,9 @@ var userInfoRequest struct {
 	Password string `json:"password"`
 }
 var rabbitData struct {
-	Email   string `json:"email"`
-	Link    string `json:"link"`
-	Subject string `json:"subject"`
+	Email       string `json:"email"`
+	MessageBody string `json:"messageBody"`
+	Subject     string `json:"subject"`
 }
 
 func Signup(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +38,22 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	requestQueue, _ := config.DeclareQueue(
+		ch,
+		"verifyEmail",
+		false,
+		false,
+		false,
+		false)
+
+	responseQueue, _ := config.DeclareQueue(
+		ch,
+		"responseFromRequestQueue",
+		false,
+		false,
+		false,
+		false)
 
 	err = json.NewDecoder(r.Body).Decode(&userInfoRequest)
 
@@ -83,20 +99,47 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	correlationID := uuid.New()
 	verificationEmailToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
 	rabbitData.Email = userInfoRequest.Email
-	rabbitData.Link = verificationEmailToken
-	rabbitData.Subject = "Verification link"
+	rabbitData.MessageBody = verificationEmailToken
+	rabbitData.Subject = "Verify your email"
 
-	err = config.ProduceMessage(ch, "verifyEmail", rabbitData)
-
-	defer conn.Close()
-	defer ch.Close()
+	err = config.ProduceMessage(requestQueue, responseQueue, ch, rabbitData, correlationID)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to send email: " + err.Error(),
+		})
+		return
+	}
+
+	response, err := config.WaitForResponseQueue(ch, responseQueue.Name, correlationID)
+
+	conn.Close()
+	ch.Close()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to send email: " + err.Error(),
+		})
+		return
+	}
+
+	if response == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Received nil response from queue",
+		})
+		return
+	}
+
+	if response.StatusCode != 200 && response.StatusCode != 201 {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to send email: " + response.Data,
 		})
 		return
 	}
