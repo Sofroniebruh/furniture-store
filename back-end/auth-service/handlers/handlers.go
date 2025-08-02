@@ -21,8 +21,9 @@ var userInfoRequest struct {
 	Password string `json:"password"`
 }
 var rabbitData struct {
-	Email string `json:"email"`
-	Token string `json:"token"`
+	Email   string `json:"email"`
+	Link    string `json:"link"`
+	Subject string `json:"subject"`
 }
 
 func Signup(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +85,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	verificationEmailToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
 	rabbitData.Email = userInfoRequest.Email
-	rabbitData.Token = verificationEmailToken
+	rabbitData.Link = verificationEmailToken
+	rabbitData.Subject = "Verification link"
 
 	err = config.ProduceMessage(ch, "verifyEmail", rabbitData)
 
