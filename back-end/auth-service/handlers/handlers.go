@@ -8,7 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
+	"fmt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -20,6 +20,7 @@ var userInfoRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
 var rabbitData struct {
 	Email       string `json:"email"`
 	MessageBody string `json:"messageBody"`
@@ -29,33 +30,8 @@ var rabbitData struct {
 func Signup(w http.ResponseWriter, r *http.Request) {
 	var existingUser models.User
 	var user models.User
-	conn, ch, err := config.InitRabbitMq()
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	requestQueue, _ := config.DeclareQueue(
-		ch,
-		"verifyEmail",
-		false,
-		false,
-		false,
-		false)
-
-	responseQueue, _ := config.DeclareQueue(
-		ch,
-		"responseFromRequestQueue",
-		false,
-		false,
-		false,
-		false)
-
-	err = json.NewDecoder(r.Body).Decode(&userInfoRequest)
+	err := json.NewDecoder(r.Body).Decode(&userInfoRequest)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -99,55 +75,10 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	correlationID := uuid.New()
-	verificationEmailToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
-	rabbitData.Email = userInfoRequest.Email
-	rabbitData.MessageBody = verificationEmailToken
-	rabbitData.Subject = "Verify your email"
-
-	err = config.ProduceMessage(requestQueue, responseQueue, ch, rabbitData, correlationID)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to send email: " + err.Error(),
-		})
-		return
-	}
-
-	response, err := config.WaitForResponseQueue(ch, responseQueue.Name, correlationID)
-
-	conn.Close()
-	ch.Close()
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to send email: " + err.Error(),
-		})
-		return
-	}
-
-	if response == nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Received nil response from queue",
-		})
-		return
-	}
-
-	if response.StatusCode != 200 && response.StatusCode != 201 {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to send email: " + response.Data,
-		})
-		return
-	}
-
 	err = db.DB.QueryRow(`
-		INSERT INTO users (username, email, password, created_at)
+		INSERT INTO users (username, email, password, created_at, is_email_verified)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at`, userInfoRequest.Username, userInfoRequest.Email, string(hashedPassword), time.Now().UTC(),
+		RETURNING id, created_at`, userInfoRequest.Username, userInfoRequest.Email, string(hashedPassword), time.Now().UTC(), false,
 	).Scan(&user.ID, &user.CreatedAt)
 
 	if err != nil {
@@ -161,7 +92,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	accessToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
 	refreshToken, _ := utils.GenerateToken(user.ID, config.REFRESH_TOKEN_TTL)
 
-	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1, verification_on_signup_token = $2 WHERE id = $3", refreshToken, verificationEmailToken, user.ID)
+	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1 WHERE id = $2", refreshToken, user.ID)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -188,7 +119,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	user.Username = userInfoRequest.Username
 	user.Email = userInfoRequest.Email
-	user.VerificationOnSignupToken = verificationEmailToken
+	user.IsEmailVerified = false
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{
@@ -226,7 +157,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.VerificationOnSignupToken != "" {
+	if !user.IsEmailVerified {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Your email is not verified",
@@ -345,59 +276,53 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
-	user := models.User{}
-
-	if token == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Token is required",
-		})
-		return
-	}
-
-	parsedToken, err := utils.ParseToken(token)
-
-	if err != nil || !parsedToken.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Unauthorized",
-		})
-		return
-	}
-
-	claims := parsedToken.Claims.(jwt.MapClaims)
-	id, _ := uuid.Parse(claims["sub"].(string))
-
-	err = db.DB.Get(&user, "SELECT * from users WHERE id = $1", id)
-
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Unauthorized",
-		})
-		return
-	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to find user",
-		})
-		return
-	}
-
-	_, err = db.DB.Exec("UPDATE users SET verification_on_signup_token = NULL WHERE id = $1", id)
+func SendEmail(data string, email string) (config.ResponsePythonHandler, error) {
+	conn, ch, err := config.InitRabbitMq()
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to update the user",
-		})
-		return
+		return config.ResponsePythonHandler{}, err
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]models.User{
-		"updated": user,
-	})
+	requestQueue, _ := config.DeclareQueue(
+		ch,
+		"verifyEmail",
+		false,
+		false,
+		false,
+		false)
+
+	responseQueue, _ := config.DeclareQueue(
+		ch,
+		"responseFromRequestQueue",
+		false,
+		false,
+		false,
+		false)
+
+	rabbitData.Email = email
+	rabbitData.MessageBody = data
+	rabbitData.Subject = "Verify your email"
+
+	correlationID := uuid.New()
+
+	err = config.ProduceMessage(requestQueue, responseQueue, ch, rabbitData, correlationID)
+
+	if err != nil {
+		return config.ResponsePythonHandler{}, err
+	}
+
+	response, err := config.WaitForResponseQueue(ch, responseQueue.Name, correlationID)
+
+	conn.Close()
+	ch.Close()
+
+	if err != nil {
+		return config.ResponsePythonHandler{}, err
+	}
+
+	if response.StatusCode != 200 && response.StatusCode != 201 {
+		return config.ResponsePythonHandler{}, fmt.Errorf("failed to send the email")
+	}
+
+	return *response, nil
 }

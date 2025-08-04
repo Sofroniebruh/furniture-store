@@ -101,6 +101,49 @@ func ProduceMessage[T any](requestQueue amqp091.Queue, replyQueue amqp091.Queue,
 	return nil
 }
 
+type ConsumedMessage[T any] struct {
+	Body          T
+	CorrelationId uuid.UUID
+}
+
+func ConsumeMessage[T any](ch *amqp091.Channel, queueName string, callback func(message ConsumedMessage[T]) error) error {
+	consumerTag := "Consumer-tag-" + uuid.New().String()
+	msgs, err := ch.Consume(queueName, consumerTag, false, false, false, false, nil)
+
+	if err != nil {
+		return errors.New("failed to consume messages: " + err.Error())
+	}
+
+	for msg := range msgs {
+		var data T
+		err = json.Unmarshal(msg.Body, &data)
+
+		if err != nil {
+			log.Println("failed to unmarshal body: " + err.Error())
+			msg.Nack(false, false)
+			continue
+		}
+
+		correlationID, _ := uuid.Parse(msg.CorrelationId)
+
+		consumedMsg := ConsumedMessage[T]{
+			Body:          data,
+			CorrelationId: correlationID,
+		}
+
+		err = callback(consumedMsg)
+
+		if err != nil {
+			msg.Nack(false, false)
+			log.Println("failed to consume message: " + err.Error())
+		} else {
+			msg.Ack(false)
+		}
+	}
+
+	return nil
+}
+
 func WaitForResponseQueue(ch *amqp091.Channel, queueName string, correlationId uuid.UUID) (*ResponsePythonHandler, error) {
 	timeout := time.Second * 30
 	consumerTag := fmt.Sprintf("consumer-tag-%s", correlationId)
@@ -139,6 +182,8 @@ func WaitForResponseQueue(ch *amqp091.Channel, queueName string, correlationId u
 				if err != nil {
 					return nil, errors.New("failed to unmarshal response: " + err.Error())
 				}
+
+				timer.Stop()
 
 				return &parsedResponse, nil
 			} else {
