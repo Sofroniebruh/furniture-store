@@ -28,8 +28,6 @@ func main() {
 	}).Handler(r)
 
 	r.Get("/user", middleware.Protected(http.HandlerFunc(services.GetUserInfo)))
-	r.Post("/send_code", services.StoreCode)
-	r.Post("/verify", services.CompareCode)
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", handler)
