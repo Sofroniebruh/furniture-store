@@ -1,0 +1,30 @@
+package utils
+
+import (
+	"errors"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"net/http"
+	"user-related-service/config"
+)
+
+func ParseToken(token string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) { return config.JWT_SECRET, nil })
+}
+
+func RetrieveIdFromCookie(r *http.Request, cookieName string) (uuid.UUID, error) {
+	cookie, err := r.Cookie(cookieName)
+
+	if err != nil || cookie == nil || cookie.Value == "" {
+		return uuid.Nil, errors.New("invalid cookie")
+	}
+
+	token, err := ParseToken(cookie.Value)
+
+	if err != nil || !token.Valid {
+		return uuid.Nil, errors.New("invalid token")
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	return uuid.Parse(claims["sub"].(string))
+}

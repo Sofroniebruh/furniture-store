@@ -1,0 +1,29 @@
+package middleware
+
+import (
+	"context"
+	_ "context"
+	"encoding/json"
+	"net/http"
+	"user-related-service/config"
+	"user-related-service/utils"
+)
+
+func Protected(next http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId, err := utils.RetrieveIdFromCookie(r, "access_token")
+
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Unauthorized",
+			})
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), config.UserIdKey, userId)
+
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
