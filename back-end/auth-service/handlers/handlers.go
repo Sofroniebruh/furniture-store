@@ -8,10 +8,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -19,6 +20,12 @@ var userInfoRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Code     string `json:"code"`
+}
+
+var userCodeRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
 }
 
 var rabbitData struct {
@@ -37,6 +44,25 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to read request",
+		})
+		return
+	}
+
+	rdb := config.NewRedisConfig()
+	code, err := rdb.Get(userInfoRequest.Email)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to get the code",
+		})
+		return
+	}
+
+	if code != userInfoRequest.Code {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid code",
 		})
 		return
 	}
@@ -77,8 +103,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	err = db.DB.QueryRow(`
 		INSERT INTO users (username, email, password, created_at, is_email_verified)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at`, userInfoRequest.Username, userInfoRequest.Email, string(hashedPassword), time.Now().UTC(), false,
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at`, userInfoRequest.Username, userInfoRequest.Email, string(hashedPassword), time.Now().UTC(), true,
 	).Scan(&user.ID, &user.CreatedAt)
 
 	if err != nil {
@@ -119,7 +145,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	user.Username = userInfoRequest.Username
 	user.Email = userInfoRequest.Email
-	user.IsEmailVerified = false
+	user.IsEmailVerified = true
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{
@@ -276,6 +302,49 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func GenerateCode(w http.ResponseWriter, r *http.Request) {
+	err := json.NewDecoder(r.Body).Decode(&userCodeRequest)
+	minRange := 100000
+	maxRange := 999999
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to decode body",
+		})
+		return
+	}
+
+	rdb := config.NewRedisConfig()
+	randomCode := rand.Intn(maxRange-minRange+1) + minRange
+	stringRandomNumber := strconv.Itoa(int(randomCode))
+
+	err = rdb.Set(userCodeRequest.Email, stringRandomNumber)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to save assigned code",
+		})
+		return
+	}
+
+	response, err := SendEmail(stringRandomNumber, userCodeRequest.Email)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to send email: " + err.Error(),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Generated successfully: " + response.Data,
+	})
+}
+
 func SendEmail(data string, email string) (config.ResponsePythonHandler, error) {
 	conn, ch, err := config.InitRabbitMq()
 
@@ -321,7 +390,7 @@ func SendEmail(data string, email string) (config.ResponsePythonHandler, error) 
 	}
 
 	if response.StatusCode != 200 && response.StatusCode != 201 {
-		return config.ResponsePythonHandler{}, fmt.Errorf("failed to send the email")
+		return config.ResponsePythonHandler{}, errors.New("failed to send the email")
 	}
 
 	return *response, nil

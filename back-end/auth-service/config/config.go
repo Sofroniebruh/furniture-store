@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
 	"time"
@@ -24,6 +26,11 @@ type ResponsePythonHandler struct {
 	Data       string `json:"data"`
 }
 
+type RedisConfig struct {
+	client *redis.Client
+	ctx    context.Context
+}
+
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -32,6 +39,29 @@ func init() {
 
 	DB_URL = os.Getenv("DATABASE_URL")
 	JWT_SECRET = []byte(os.Getenv("JWT_SECRET"))
+}
+
+func NewRedisConfig() *RedisConfig {
+	return &RedisConfig{
+		client: redis.NewClient(&redis.Options{
+			Addr:     os.Getenv("REDIS_URL"),
+			Password: os.Getenv("REDIS_PASSWORD"),
+			DB:       0,
+		}),
+		ctx: context.Background(),
+	}
+}
+
+func (r *RedisConfig) Set(key, value string) error {
+	return r.client.Set(r.ctx, key, value, 0).Err()
+}
+
+func (r *RedisConfig) Get(key string) (string, error) {
+	return r.client.Get(r.ctx, key).Result()
+}
+
+func (r *RedisConfig) Delete(key string) error {
+	return r.client.Del(r.ctx, key).Err()
 }
 
 func InitRabbitMq() (*amqp091.Connection, *amqp091.Channel, error) {
