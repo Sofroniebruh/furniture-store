@@ -9,10 +9,10 @@ import (
 	"net/http"
 )
 
-type body struct {
-	Code  string `json:"code"`
-	Email string `json:"email"`
-}
+//type body struct {
+//	Code  string `json:"code"`
+//	Email string `json:"email"`
+//}
 
 func main() {
 	err := db.Init()
