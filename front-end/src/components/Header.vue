@@ -8,10 +8,15 @@ import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button/index.js";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
 import {useParams} from "@/composables/useParams.js";
+import {useAuthStore} from "@/stores/useAuth.js";
+import DialogGeneral from "@/components/DialogGeneral.vue";
+import GeneralStepperForm from "@/components/GeneralStepperForm.vue";
 
 const smallScreenSheet = useScreenSheetStore()
+const auth = useAuthStore()
 const route = useRoute()
 const {updateProductName} = useParams()
+const {isDialogOpen, setOpenDialog, setOpenSheet} = useScreenSheetStore()
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
 const isOnProductsPage = computed(() => route.path === "/products");
@@ -138,9 +143,42 @@ watch(productName, (newValue) => {
               </div>
             </template>
           </SheetGeneral>
-          <li class="hidden sm:block">
-            <User></User>
-          </li>
+          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenProfile')" title="">
+            <template #trigger>
+              <li class="hidden sm:block" @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenProfile'})">
+                <User></User>
+              </li>
+            </template>
+            <template #content>
+              <div class="flex items-center justify-center h-full">
+                <div class="flex flex-col" v-if="auth.isAuthenticated">
+                  <h1>Welcome back, {{ auth.user.username }}</h1>
+                  <router-link :to="'/profile/' + auth.user.id">
+                    <Button>Profile
+                      <User/>
+                    </Button>
+                  </router-link>
+                </div>
+                <div class="flex flex-col justify-center items-center gap-12" v-else>
+                  <h1 class="font-semibold text-4xl">FUMI</h1>
+                  <div class="flex justify-around items-center h-full gap-3">
+                    <DialogGeneral :is-open="isDialogOpen('RegisterDialog')" title="Sign up"
+                                   description="Create your account">
+                      <template #trigger>
+                        <Button @click="setOpenDialog(true, {name: 'RegisterDialog'})" size="lg" variant="outline"
+                                class="text-lg cursor-pointer">Sign Up
+                        </Button>
+                      </template>
+                      <template #content>
+                        <GeneralStepperForm></GeneralStepperForm>
+                      </template>
+                    </DialogGeneral>
+                    <Button size="lg" class="text-lg cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Sign In</Button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </SheetGeneral>
           <li class="hidden sm:block">
             <Heart></Heart>
           </li>

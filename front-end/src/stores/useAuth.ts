@@ -1,0 +1,187 @@
+import {defineStore} from "pinia";
+import {ref} from "vue";
+
+export type User = {
+    id: string;
+    username: string;
+    email: string;
+}
+
+type AuthResponse = {
+    created?: User;
+    user?: User;
+    message?: string;
+    error?: string;
+}
+
+export type UserCredentialsInput = {
+    email: string;
+    password: string;
+}
+
+export const useAuthStore = defineStore("authStore", () => {
+    const isAuthenticated = ref(false);
+    const user = ref<User | null>(null);
+    const error = ref<string>("")
+    const loading = ref<boolean>(false);
+
+    const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput) => {
+        error.value = ""
+        loading.value = true;
+        const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/${endpoint}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        })
+        loading.value = false;
+
+        const data = await res.json() as AuthResponse;
+
+        if (!res.ok) {
+            error.value = data?.error || "Unknown error";
+            console.error("Error: ", error.value);
+            return 500;
+        }
+
+        return res.status
+    }
+    const fetchUser = async () => {
+        try {
+            error.value = ""
+            const res = await fetch(`${import.meta.env.VITE_USER_RELATED_SERVICE_URL}/user`, {
+                method: "GET",
+                credentials: "include"
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                isAuthenticated.value = false;
+                user.value = null;
+                return
+            }
+
+            isAuthenticated.value = true
+            user.value = data.user
+        } catch (e) {
+            console.error(e)
+        }
+    }
+    const verifyCode = async (code: string, email: string) => {
+        try {
+            error.value = ""
+            loading.value = true;
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/verify`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: email,
+                    code: code,
+                }),
+                credentials: "include"
+            })
+
+            const data = await res.json()
+
+            loading.value = false;
+
+            if (!res.ok) {
+                error.value = data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return false
+            }
+
+
+            isAuthenticated.value = true
+            user.value = data.verified!
+
+            return true
+        } catch (e) {
+            console.error(e)
+            return false
+        } finally {
+            loading.value = false
+        }
+    }
+    const resendCode = async (email: string) => {
+        try {
+            error.value = ""
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/resend`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: email,
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                error.value = data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return res.status
+            }
+
+            return res.status
+        } catch (e) {
+            console.error(e)
+            return 500
+        }
+    }
+    const logout = async () => {
+        try {
+            error.value = ""
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/logout`, {
+                method: "POST",
+                credentials: "include"
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                error.value = data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return
+            }
+
+            isAuthenticated.value = false
+            user.value = null
+        } catch (e) {
+            console.error(e)
+        }
+    }
+    const registration = async (body: UserCredentialsInput) => {
+        try {
+            return await handleSendingAuthData("registration", body)
+        } catch (e) {
+            console.error(e)
+            return 500
+        }
+    }
+    const login = async (body: UserCredentialsInput) => {
+        try {
+            await handleSendingAuthData("login", body)
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    return {
+        user,
+        isAuthenticated,
+        error,
+        loading,
+        fetchUser,
+        registration,
+        resendCode,
+        verifyCode,
+        logout,
+        login,
+    }
+})
