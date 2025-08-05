@@ -34,15 +34,16 @@ export const useAuthStore = defineStore("authStore", () => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
+            credentials: "include"
         })
         loading.value = false;
 
         const data = await res.json() as AuthResponse;
 
         if (!res.ok) {
-            error.value = data?.error || "Unknown error";
+            error.value = res.status === 401 && endpoint.endsWith("login") ? "Password and/or email are incorrect" : data?.error || "Unknown error";
             console.error("Error: ", error.value);
-            return 500;
+            return res.status;
         }
 
         return res.status
@@ -166,7 +167,7 @@ export const useAuthStore = defineStore("authStore", () => {
     }
     const login = async (body: UserCredentialsInput) => {
         try {
-            await handleSendingAuthData("login", body)
+            return await handleSendingAuthData("login", body)
         } catch (e) {
             console.error(e)
         }

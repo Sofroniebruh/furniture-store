@@ -3,12 +3,17 @@ import * as z from "zod";
 import {useField, useForm} from "vee-validate";
 import {toTypedSchema} from "@vee-validate/zod";
 import {Button} from '@/components/ui/button'
+import {useAuthStore} from "@/stores/useAuth.js";
+import {toast} from "vue-sonner";
+import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 
 const schema = z.object({
   email: z.string().min(1, "Email is required").email("Email is not valid").default(""),
   password: z.string().min(1, "Password is required").min(6, "Password should be at least 6 characters").default(""),
 })
 
+const auth = useAuthStore()
+const {setOpenDialog} = useScreenSheetStore()
 const {handleSubmit, meta, values} = useForm({
   validationSchema: toTypedSchema(schema),
 })
@@ -23,7 +28,18 @@ const {
 } = useField('password')
 
 const onSubmit = handleSubmit(async values => {
-  console.log(values)
+  try {
+    const res = await auth.login(values)
+
+    console.log(res)
+
+    if (res === 200) {
+      toast.success("Log in successfully")
+      setOpenDialog(false, {name: "LoginDialog"})
+    }
+  } catch (error) {
+    console.error(error)
+  }
 })
 </script>
 
@@ -38,8 +54,10 @@ const onSubmit = handleSubmit(async values => {
       </div>
       <div class="flex flex-col w-full">
         <label for="email">Password</label>
-        <input class="border rounded-sm px-2 py-1" type="password" v-model="password" id="password" placeholder="yourpassword"/>
+        <input class="border rounded-sm px-2 py-1" type="password" v-model="password" id="password"
+               placeholder="yourpassword"/>
         <span class="text-red-500 text-sm">{{ passwordError }}</span>
+        <span class="text-red-500 text-sm">{{ auth.error }}</span>
       </div>
       <div class="flex justify-between items-center w-full">
         <Button type="button" class="cursor-pointer" variant="outline">Forgot password</Button>
