@@ -46,6 +46,11 @@ export const useAuthStore = defineStore("authStore", () => {
             return res.status;
         }
 
+        if (endpoint.endsWith("login")) {
+            isAuthenticated.value = true;
+            user.value = data?.user!
+        }
+
         return res.status
     }
     const fetchUser = async () => {
@@ -167,7 +172,7 @@ export const useAuthStore = defineStore("authStore", () => {
     }
     const login = async (body: UserCredentialsInput) => {
         try {
-            return await handleSendingAuthData("login", body)
+            const res = await handleSendingAuthData("login", body)
         } catch (e) {
             console.error(e)
         }

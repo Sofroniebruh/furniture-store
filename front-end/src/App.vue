@@ -4,19 +4,15 @@ import Footer from "@/components/Footer.vue";
 import {useAuthStore} from "@/stores/useAuth.js";
 import {Toaster} from '@/components/ui/sonner'
 import 'vue-sonner/style.css'
-import {computed, onMounted} from "vue";
+import {onMounted, watch} from "vue";
 
-const {fetchUser, user, error, isAuthenticated} = useAuthStore()
-
-const upToDateUser = computed(() => user)
-const upToDateError = computed(() => error)
-const upToDateIsAuthenticated = computed(() => isAuthenticated)
-
-console.log(upToDateUser.value)
-console.log(upToDateError.value)
-console.log(upToDateIsAuthenticated.value)
+const {fetchUser, isAuthenticated} = useAuthStore()
 
 onMounted(async () => {
+  await fetchUser()
+})
+
+watch(isAuthenticated, async () => {
   await fetchUser()
 })
 </script>

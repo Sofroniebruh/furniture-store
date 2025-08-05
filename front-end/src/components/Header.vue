@@ -12,6 +12,7 @@ import {useParams} from "@/composables/useParams.js";
 import {useAuthStore} from "@/stores/useAuth.js";
 import DialogGeneral from "@/components/DialogGeneral.vue";
 import GeneralStepperForm from "@/components/GeneralStepperForm.vue";
+import Profile from "@/components/Profile.vue";
 
 const smallScreenSheet = useScreenSheetStore()
 const auth = useAuthStore()
@@ -24,6 +25,8 @@ const isOnProductsPage = computed(() => route.path === "/products");
 
 const productName = ref("")
 const timeout = ref(null)
+const updatedRegisterState = computed(() => smallScreenSheet.isDialogOpen("RegisterDialog"))
+const updatedLoginState = computed(() => smallScreenSheet.isDialogOpen("LoginDialog"))
 
 const handleChange = (value) => {
   productName.value = value;
@@ -33,6 +36,14 @@ const handleSearch = () => {
   smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenSearch'})
   updateProductName(productName.value);
 }
+
+watch(updatedLoginState, () => {
+  auth.error = ""
+})
+watch(updatedRegisterState, () => {
+  auth.error = ""
+})
+
 
 watch(productName, (newValue) => {
   if (window.innerWidth >= 1024) {
@@ -152,14 +163,7 @@ watch(productName, (newValue) => {
             </template>
             <template #content>
               <div class="flex items-center justify-center h-full">
-                <div class="flex flex-col" v-if="auth.isAuthenticated">
-                  <h1>Welcome back, {{ auth.user.username }}</h1>
-                  <router-link :to="'/profile/' + auth.user.id">
-                    <Button>Profile
-                      <User/>
-                    </Button>
-                  </router-link>
-                </div>
+                <Profile v-if="auth.isAuthenticated"></Profile>
                 <div class="flex flex-col justify-center items-center gap-12" v-else>
                   <h1 class="font-semibold text-4xl">FUMI</h1>
                   <div class="flex justify-around items-center h-full gap-3">
