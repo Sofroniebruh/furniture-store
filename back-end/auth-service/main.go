@@ -113,7 +113,8 @@ func main() {
 	r.Post("/login", handlers.Login)
 	r.Post("/logout", handlers.Logout)
 	r.Post("/refresh", handlers.Refresh)
-	r.Post("/send-code", handlers.GenerateCode)
+	r.Post("/verify", handlers.Verify)
+	r.Post("/resend", handlers.ResendCode)
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", handler)

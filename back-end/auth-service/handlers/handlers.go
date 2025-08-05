@@ -16,16 +16,14 @@ import (
 	"time"
 )
 
-var userInfoRequest struct {
-	Username string `json:"username"`
+type userInfoRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Code     string `json:"code"`
 }
 
-var userCodeRequest struct {
-	Email string `json:"email"`
+type userCodeRequest struct {
 	Code  string `json:"code"`
+	Email string `json:"email"`
 }
 
 var rabbitData struct {
@@ -37,8 +35,9 @@ var rabbitData struct {
 func Signup(w http.ResponseWriter, r *http.Request) {
 	var existingUser models.User
 	var user models.User
+	var userInfo userInfoRequest
 
-	err := json.NewDecoder(r.Body).Decode(&userInfoRequest)
+	err := json.NewDecoder(r.Body).Decode(&userInfo)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -48,34 +47,15 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdb := config.NewRedisConfig()
-	code, err := rdb.Get(userInfoRequest.Email)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to get the code",
-		})
-		return
-	}
-
-	if code != userInfoRequest.Code {
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Invalid code",
-		})
-		return
-	}
-
-	if userInfoRequest.Username == "" || userInfoRequest.Email == "" || userInfoRequest.Password == "" {
+	if userInfo.Email == "" || userInfo.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Username, Email and Password are required",
+			"error": "Email and Password are required",
 		})
 		return
 	}
 
-	err = db.DB.Get(&existingUser, "SELECT id FROM users WHERE email = $1", userInfoRequest.Email)
+	err = db.DB.Get(&existingUser, "SELECT id FROM users WHERE email = $1", userInfo.Email)
 
 	if existingUser.ID != uuid.Nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -91,7 +71,37 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInfoRequest.Password), bcrypt.DefaultCost)
+	data, err := json.Marshal(userInfo)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Error marshalling user info",
+		})
+		return
+	}
+
+	go func() {
+		response, err := GenerateCode(data)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Error generating code: " + err.Error(),
+			})
+			return
+		}
+
+		if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Error sending email",
+			})
+			return
+		}
+	}()
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInfo.Password), bcrypt.DefaultCost)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -102,9 +112,9 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = db.DB.QueryRow(`
-		INSERT INTO users (username, email, password, created_at, is_email_verified)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_at`, userInfoRequest.Username, userInfoRequest.Email, string(hashedPassword), time.Now().UTC(), true,
+		INSERT INTO users (email, password, created_at, is_email_verified)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at`, userInfo.Email, string(hashedPassword), time.Now().UTC(), false,
 	).Scan(&user.ID, &user.CreatedAt)
 
 	if err != nil {
@@ -115,37 +125,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
-	refreshToken, _ := utils.GenerateToken(user.ID, config.REFRESH_TOKEN_TTL)
-
-	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1 WHERE id = $2", refreshToken, user.ID)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to save refresh token",
-		})
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
-		Path:     "/",
-		HttpOnly: true,
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
-		Path:     "/",
-		HttpOnly: true,
-	})
-
-	user.Username = userInfoRequest.Username
-	user.Email = userInfoRequest.Email
-	user.IsEmailVerified = true
+	user.Email = userInfo.Email
+	user.IsEmailVerified = false
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.User{
@@ -155,8 +136,9 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	var user models.User
+	var userInfo userInfoRequest
 
-	err := json.NewDecoder(r.Body).Decode(&userInfoRequest)
+	err := json.NewDecoder(r.Body).Decode(&userInfo)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -165,17 +147,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if userInfoRequest.Username == "" || userInfoRequest.Email == "" || userInfoRequest.Password == "" {
+	if userInfo.Email == "" || userInfo.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Username, Email and Password are required",
+			"error": "Email and Password are required",
 		})
 		return
 	}
 
-	err = db.DB.Get(&user, "SELECT * FROM users WHERE email = $1", userInfoRequest.Email)
+	err = db.DB.Get(&user, "SELECT * FROM users WHERE email = $1", userInfo.Email)
 
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInfoRequest.Password)) != nil {
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInfo.Password)) != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Unauthorized",
@@ -302,47 +284,164 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func GenerateCode(w http.ResponseWriter, r *http.Request) {
-	err := json.NewDecoder(r.Body).Decode(&userCodeRequest)
-	minRange := 100000
-	maxRange := 999999
+func Verify(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	var userWithCode userCodeRequest
+
+	err := json.NewDecoder(r.Body).Decode(&userWithCode)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to decode body",
+			"error": "Invalid request",
 		})
 		return
 	}
 
-	rdb := config.NewRedisConfig()
-	randomCode := rand.Intn(maxRange-minRange+1) + minRange
-	stringRandomNumber := strconv.Itoa(int(randomCode))
-
-	err = rdb.Set(userCodeRequest.Email, stringRandomNumber)
+	var rdb = config.NewRedisConfig()
+	code, err := rdb.Get(userWithCode.Email)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to save assigned code",
+			"error": "Failed to get the code",
 		})
 		return
 	}
 
-	response, err := SendEmail(stringRandomNumber, userCodeRequest.Email)
+	if code != userWithCode.Code {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid code",
+		})
+		return
+	}
+
+	err = rdb.Delete(userWithCode.Email)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to send email: " + err.Error(),
+			"error": "Failed to delete the code",
+		})
+		return
+	}
+
+	err = db.DB.QueryRow("UPDATE users SET is_email_verified = $1 WHERE email = $2 RETURNING id", true, userWithCode.Email).Scan(&user.ID)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to update the user",
+		})
+		return
+	}
+
+	user.Email = userWithCode.Email
+	user.IsEmailVerified = true
+
+	accessToken, _ := utils.GenerateToken(user.ID, config.ACCESS_TOKEN_TTL)
+	refreshToken, _ := utils.GenerateToken(user.ID, config.REFRESH_TOKEN_TTL)
+
+	_, err = db.DB.Exec("UPDATE users SET refresh_token = $1 WHERE id = $2", refreshToken, user.ID)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to save refresh token",
+		})
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
+		Path:     "/",
+		HttpOnly: true,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]models.User{
+		"verified": user,
+	})
+}
+
+func ResendCode(w http.ResponseWriter, r *http.Request) {
+	type userEmail struct {
+		Email string `json:"email"`
+	}
+	var user userEmail
+	err := json.NewDecoder(r.Body).Decode(&user)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request",
+		})
+		return
+	}
+
+	data, _ := json.Marshal(user)
+
+	response, err := GenerateCode(data)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to generate code",
+		})
+		return
+	}
+
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Error sending email",
 		})
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
-		"message": "Generated successfully: " + response.Data,
+		"message": "Successfully sent email",
 	})
+}
+
+func GenerateCode(body []byte) (*config.ResponsePythonHandler, error) {
+	var user userInfoRequest
+	err := json.Unmarshal(body, &user)
+	minRange := 10000
+	maxRange := 99999
+
+	if err != nil {
+		return &config.ResponsePythonHandler{}, errors.New("Failed to unmarshal JSON: " + err.Error())
+	}
+
+	rdb := config.NewRedisConfig()
+	randomCode := rand.Intn(maxRange-minRange+1) + minRange
+	stringRandomNumber := strconv.Itoa(int(randomCode))
+
+	err = rdb.Set(user.Email, stringRandomNumber, 120*time.Second)
+
+	if err != nil {
+		return &config.ResponsePythonHandler{}, errors.New("Failed to set random code: " + err.Error())
+	}
+
+	response, err := SendEmail(stringRandomNumber, user.Email)
+
+	if err != nil {
+		return &config.ResponsePythonHandler{}, errors.New("Failed to send email: " + err.Error())
+	}
+
+	return &response, nil
 }
 
 func SendEmail(data string, email string) (config.ResponsePythonHandler, error) {

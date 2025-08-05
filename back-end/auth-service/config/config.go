@@ -52,8 +52,8 @@ func NewRedisConfig() *RedisConfig {
 	}
 }
 
-func (r *RedisConfig) Set(key, value string) error {
-	return r.client.Set(r.ctx, key, value, 0).Err()
+func (r *RedisConfig) Set(key, value string, exp time.Duration) error {
+	return r.client.Set(r.ctx, key, value, exp).Err()
 }
 
 func (r *RedisConfig) Get(key string) (string, error) {
