@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"user-related-service/config"
 	"user-related-service/db"
@@ -21,6 +22,7 @@ type UserDataWithEmail struct {
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(config.UserIdKey).(uuid.UUID)
+	log.Println(userId)
 	var user models.User
 
 	err := db.DB.Get(&user, "SELECT * FROM users WHERE id = $1", userId)
