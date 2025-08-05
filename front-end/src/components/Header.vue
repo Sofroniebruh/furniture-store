@@ -3,6 +3,7 @@ import Wrapper from "@/components/Wrapper.vue";
 import {ArrowRight, Heart, Menu, Search, ShoppingBag, User} from 'lucide-vue-next';
 import SheetGeneral from "@/components/SheetGeneral.vue";
 import {useRoute} from "vue-router";
+import Login from "@/components/Login.vue";
 import {computed, ref, watch} from "vue";
 import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button/index.js";
@@ -173,7 +174,17 @@ watch(productName, (newValue) => {
                         <GeneralStepperForm></GeneralStepperForm>
                       </template>
                     </DialogGeneral>
-                    <Button size="lg" class="text-lg cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Sign In</Button>
+                    <DialogGeneral description="Sign in to your account" title="Sign In"
+                                   :is-open="isDialogOpen('LoginDialog')">
+                      <template #trigger>
+                        <Button @click="setOpenDialog(true, {name: 'LoginDialog'})" size="lg"
+                                class="text-lg cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Sign In
+                        </Button>
+                      </template>
+                      <template #content>
+                        <Login></Login>
+                      </template>
+                    </DialogGeneral>
                   </div>
                 </div>
               </div>
