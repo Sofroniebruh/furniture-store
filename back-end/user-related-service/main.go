@@ -28,6 +28,11 @@ func main() {
 	}).Handler(r)
 
 	r.Get("/user", middleware.Protected(http.HandlerFunc(services.GetUserInfo)))
+	r.Get("/user/wishlist", middleware.Protected(http.HandlerFunc(services.GetWishlistOrHistoryPerUser)))
+	r.Get("/user/history", middleware.Protected(http.HandlerFunc(services.GetWishlistOrHistoryPerUser)))
+	r.Post("/user/wishlist", middleware.Protected(http.HandlerFunc(services.AddToWishListOrHistory)))
+	r.Post("/user/history", middleware.Protected(http.HandlerFunc(services.AddToWishListOrHistory)))
+	r.Delete("/user/wishlist", middleware.Protected(http.HandlerFunc(services.RemoveFromWishList)))
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", handler)
