@@ -56,6 +56,20 @@ export const useAuthStore = defineStore("authStore", () => {
     const fetchUser = async () => {
         try {
             error.value = ""
+            const refreshRes = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/refresh`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include"
+            })
+
+            if (!refreshRes.ok) {
+                isAuthenticated.value = false;
+                user.value = null;
+                return
+            }
+
             const res = await fetch(`${import.meta.env.VITE_USER_RELATED_SERVICE_URL}/user`, {
                 method: "GET",
                 credentials: "include"

@@ -103,10 +103,6 @@ watch(productName, (newValue) => {
                 <User/>
                 Profile
               </li>
-              <li class="flex items-center gap-2 text-2xl text-gray-700 hover:text-black">
-                <Heart/>
-                Wishlist
-              </li>
             </ul>
           </template>
         </SheetGeneral>
@@ -194,9 +190,6 @@ watch(productName, (newValue) => {
               </div>
             </template>
           </SheetGeneral>
-          <li class="hidden sm:block">
-            <Heart></Heart>
-          </li>
           <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="Your Cart">
             <template #trigger>
               <li @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenCart'})">
