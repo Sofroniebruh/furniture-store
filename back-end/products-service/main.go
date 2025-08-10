@@ -27,16 +27,21 @@ func main() {
 		AllowCredentials: true,
 	}).Handler(r)
 
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.ProtectedWithRoles("admin"))
+		r.Put("/products", services.UpdateProduct)
+		r.Delete("/products", services.DeleteProduct)
+		r.Post("/products", services.AddProduct)
+
+		r.Post("/colors", services.CreateColor)
+		r.Delete("/colors", services.DeleteColor)
+		r.Put("/colors", services.UpdateColor)
+	})
+
 	r.Get("/products", services.GetProducts)
 	r.Get("/products/{id}", services.GetProductById)
-	r.Put("/products", middleware.Protected(http.HandlerFunc(services.UpdateProduct)))
-	r.Delete("/products", middleware.Protected(http.HandlerFunc(services.DeleteProduct)))
-	r.Post("/products", middleware.Protected(http.HandlerFunc(services.AddProduct)))
 
-	r.Post("/colors", middleware.Protected(http.HandlerFunc(services.CreateColor)))
 	r.Get("/colors", services.GetAllColors)
-	r.Delete("/colors", middleware.Protected(http.HandlerFunc(services.DeleteColor)))
-	r.Put("/colors", middleware.Protected(http.HandlerFunc(services.UpdateColor)))
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", handler)

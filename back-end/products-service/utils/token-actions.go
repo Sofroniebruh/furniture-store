@@ -8,25 +8,34 @@ import (
 	"products-service/config"
 )
 
+type Claims struct {
+	UserId uuid.UUID `json:"userId"`
+	Roles  []string  `json:"roles"`
+	jwt.RegisteredClaims
+}
+
 func ParseToken(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+	return jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return config.JWT_SECRET, nil
 	})
 }
 
-func RetrieveIdFromCookie(r *http.Request, cookieName string) (uuid.UUID, error) {
+func RetrieveIdAndRoleFromCookie(r *http.Request, cookieName string) (uuid.UUID, []string, error) {
 	cookie, err := r.Cookie(cookieName)
 
 	if err != nil || cookie == nil || cookie.Value == "" {
-		return uuid.Nil, errors.New("invalid cookie")
+		return uuid.Nil, nil, errors.New("invalid cookie")
 	}
 
 	token, err := ParseToken(cookie.Value)
 
 	if err != nil || !token.Valid {
-		return uuid.Nil, errors.New("unauthorized")
+		return uuid.Nil, nil, errors.New("unauthorized")
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	return uuid.Parse(claims["sub"].(string))
+	claims := token.Claims.(*Claims)
+	id := claims.UserId
+	roles := claims.Roles
+
+	return id, roles, nil
 }
