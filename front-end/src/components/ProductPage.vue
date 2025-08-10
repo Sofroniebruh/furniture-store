@@ -47,12 +47,15 @@ const incQty = () => {
 
 const handleWishlist = async () => {
   if (!product.value) return
+  const isCurrentlyInWishlist = isItemInWishlist(productId.value)
 
   toggleWishlist(product.value)
 
-  if (!isItemInWishlist(productId.value)) {
+  if (!isCurrentlyInWishlist) {
     try {
       const res = await addToWishlist(productId.value)
+
+      console.log("Res", res)
 
       if (res !== 201) {
         removeFromWishlistStore(productId.value)

@@ -5,14 +5,17 @@ import {Button} from "@/components/ui/button/index.js";
 import {useAuthStore} from "@/stores/useAuth.js";
 import ProfileTabs from "@/components/ProfileTabs.vue";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
+import {useWishlistStore} from "@/stores/useWishlist.js";
 
 const auth = useAuthStore()
 const screenSheet = useScreenSheetStore()
+const {clearWishlist} = useWishlistStore()
 
 const handleLogout = () => {
   auth.logout()
   screenSheet.setOpenSheet(false, {name: 'ScreenProfile'})
   screenSheet.setAllDialogsClosed()
+  clearWishlist()
 }
 </script>
 

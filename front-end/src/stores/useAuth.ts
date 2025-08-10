@@ -3,8 +3,8 @@ import {ref} from "vue";
 
 export type User = {
     id: string;
-    username: string;
     email: string;
+    roles: string[];
 }
 
 type AuthResponse = {
@@ -76,6 +76,8 @@ export const useAuthStore = defineStore("authStore", () => {
             })
 
             const data = await res.json()
+
+            console.log(data)
 
             if (!res.ok) {
                 isAuthenticated.value = false;
