@@ -28,6 +28,7 @@ func main() {
 	}).Handler(r)
 
 	r.Get("/products", services.GetProducts)
+	r.Get("/products/{id}", services.GetProductById)
 	r.Put("/products", middleware.Protected(http.HandlerFunc(services.UpdateProduct)))
 	r.Delete("/products", middleware.Protected(http.HandlerFunc(services.DeleteProduct)))
 	r.Post("/products", middleware.Protected(http.HandlerFunc(services.AddProduct)))

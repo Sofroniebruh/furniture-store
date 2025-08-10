@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -295,12 +296,49 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func GetProductById(w http.ResponseWriter, r *http.Request) {
+	var product models.Product
+	id := chi.URLParam(r, "id")
+
+	err := db.DB.Get(&product, "SELECT * FROM products WHERE id = $1", id)
+
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Product not found",
+		})
+		return
+	} else if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to get product",
+		})
+		return
+	}
+
+	product, err = GetProductsWithColors(product)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to get product with colors",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]models.Product{
+		"product": product,
+	})
+}
+
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	sorting := r.URL.Query().Get("sorting")
 	limitStr := r.URL.Query().Get("limit")
 	priceFromStr := r.URL.Query().Get("price_from")
 	priceToStr := r.URL.Query().Get("price_to")
+	productName := r.URL.Query().Get("product_name")
 	priceFromInt, err := strconv.Atoi(priceFromStr)
 
 	if err != nil && priceFromStr != "" {
@@ -332,6 +370,10 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	if priceFromStr != "" && priceFromInt > 0 {
 		filters = append(filters, "price >= :price_from")
 		params["price_from"] = priceFromInt
+	}
+	if productName != "" {
+		filters = append(filters, "name ILIKE :product_name")
+		params["product_name"] = "%" + productName + "%"
 	}
 	if priceToStr != "" && priceToInt > 0 {
 		filters = append(filters, "price <= :price_to")
