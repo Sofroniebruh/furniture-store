@@ -12,7 +12,7 @@ import {onMounted, watch} from "vue";
 import Pagination from "@/components/Pagination.vue";
 
 const smallScreenSheet = useScreenSheetStore()
-const {products, loading, error, fetchProducts, totalPages} = useProducts()
+const {products, loading, error, fetchProducts} = useProducts()
 
 onMounted(async () => {
   await fetchProducts()
@@ -61,10 +61,12 @@ watch(products.value, (newValue) => {
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">
         <div v-for="(product, index) in products" :key="index"
              class="flex w-full items-center justify-center p-5 md:p-0">
-          <ProductCard class="w-full max-w-[300px]"
-                       :product-price="product.price"
-                       :product-image="product.pictureUrls[0]" :product-colors-amount="product.colors.length"
-                       :product-name="product.name"/>
+          <router-link :to="`/product/${product.id}`">
+            <ProductCard class="w-full max-w-[300px]"
+                         :product-price="product.price"
+                         :product-image="product.pictureUrls[0]" :product-colors-amount="product.colors.length"
+                         :product-name="product.name"/>
+          </router-link>
         </div>
       </div>
       <Pagination v-if="products !== null"/>

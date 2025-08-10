@@ -2,7 +2,6 @@
 
 import {Button} from "@/components/ui/button/index.js";
 import {Info, Trash} from 'lucide-vue-next';
-
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory.js";
 
 const {removeFromWishlist} = useWishlistOrHistory()

@@ -5,6 +5,7 @@ import {useParams} from "@/composables/useParams";
 
 
 const products = ref<Product[]>([])
+const product = ref<Product | null>(null)
 const error = ref<boolean>(false)
 const loading = ref<boolean>(false)
 const totalPages = ref<Number>(0)
@@ -72,6 +73,36 @@ export function useProducts() {
             loading.value = false
         }
     }
+    const fetchProductById = async (id: string) => {
+        try {
+            loading.value = true
+            error.value = false
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/products/${id}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+
+            const data = await res.json() as { product: Product }
+
+            if (!res.ok) {
+                product.value = null
+                error.value = true
+                console.error(`Failed to fetch ${backendUrl}. Status: ` + res.status)
+                return {status: res.status}
+            }
+
+            product.value = data.product
+            return {status: 200}
+        } catch (e) {
+            error.value = true
+            console.error(e)
+            return {status: 500}
+        } finally {
+            loading.value = false
+        }
+    }
 
     const handleNext = async (pageNumber: number) => {
         await setPage(pageNumber)
@@ -87,6 +118,7 @@ export function useProducts() {
 
     return {
         products,
+        product,
         error,
         loading,
         totalPages,
@@ -94,6 +126,7 @@ export function useProducts() {
         handleNext,
         handlePrevious,
         fetchProducts,
+        fetchProductById,
         setPage,
     }
 }

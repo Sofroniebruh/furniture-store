@@ -3,9 +3,9 @@ import {Tabs, TabsContent, TabsList, TabsTrigger,} from '@/components/ui/tabs'
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory";
 import {onMounted} from "vue";
 import ProductCardProfile from "@/components/ProductCardProfile.vue";
+import {useWishlistStore} from "@/stores/useWishlist";
 
 const {
-  productsWishlistData,
   productsHistoryData,
   fetchWishlistData,
   wishlistLoading,
@@ -13,6 +13,7 @@ const {
   historyLoading,
   historyError
 } = useWishlistOrHistory()
+const {itemsInWishlist} = useWishlistStore()
 
 onMounted(async () => {
   await fetchWishlistData("wishlist")
@@ -32,17 +33,18 @@ onMounted(async () => {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="wishlist" class="flex-1 flex flex-col">
-        <div class="h-[calc(100%-185px)] overflow-y-auto flex flex-col justify-center items-center">
-          <div v-if="wishlistError || wishlistLoading || productsWishlistData.length == 0"
+        <div class="h-[calc(100%-185px)] overflow-y-auto flex flex-col">
+          <div v-if="wishlistError || wishlistLoading || itemsInWishlist.length == 0"
                class="w-full h-full flex flex-col justify-center items-center">
             <p class="text-base font-semibold text-gray-600" v-if="wishlistLoading">Loading...</p>
             <p class="text-base font-semibold text-gray-600" v-if="wishlistError">Error on our side...</p>
             <p class="text-base font-semibold text-gray-600"
-               v-if="!wishlistLoading && productsWishlistData.length == 0">No products
+               v-if="!wishlistLoading && itemsInWishlist.length == 0">No products
               added</p>
           </div>
-          <ProductCardProfile v-for="(product, index) in productsWishlistData" :image-src="product.pictureUrls[0]"
-                              :name="product.name" :price="product.price" :id="product.id" :key="index"/>
+          <ProductCardProfile v-for="(product, index) in itemsInWishlist" :image-src="product.pictureUrls[0]"
+                              :name="product.name" :price="product.price" :id="product.id" :product="product"
+                              :key="index"/>
         </div>
       </TabsContent>
       <TabsContent value="history" class="flex-1 flex flex-col">
@@ -56,6 +58,7 @@ onMounted(async () => {
           </div>
           <ProductCardProfile :is-history-card="true" v-for="(product, index) in productsHistoryData"
                               :image-src="product.pictureUrls[0]"
+                              :product="product"
                               :name="product.name" :price="product.price" :id="product.id" :key="index"/>
         </div>
       </TabsContent>
