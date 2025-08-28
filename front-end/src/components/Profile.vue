@@ -6,16 +6,20 @@ import {useAuthStore} from "@/stores/useAuth.js";
 import ProfileTabs from "@/components/ProfileTabs.vue";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 import {useWishlistStore} from "@/stores/useWishlist.js";
+import {useRouter} from 'vue-router'
 
 const auth = useAuthStore()
 const screenSheet = useScreenSheetStore()
 const {clearWishlist} = useWishlistStore()
+const router = useRouter()
 
-const handleLogout = () => {
-  auth.logout()
+const handleLogout = async () => {
+  await auth.logout()
   screenSheet.setOpenSheet(false, {name: 'ScreenProfile'})
   screenSheet.setAllDialogsClosed()
   clearWishlist()
+
+  await router.push('/products')
 }
 </script>
 
