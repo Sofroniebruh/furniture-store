@@ -10,7 +10,9 @@ import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
 import {useParams} from "@/composables/useParams.js";
 import {useAuthStore} from "@/stores/useAuth.js";
 import Profile from "@/components/Profile.vue";
-import AuthComponent from "@/components/AuthComponent.vue";
+import AuthComponent from "@/components/auth/AuthComponent.vue";
+import RegistrationButton from "@/components/auth/RegistrationButton.vue";
+import LoginButton from "@/components/auth/LoginButton.vue";
 
 const smallScreenSheet = useScreenSheetStore()
 const auth = useAuthStore()
@@ -107,8 +109,8 @@ watch(productName, (newValue) => {
                 </router-link>
               </li>
               <li v-else class="flex items-center gap-2 text-2xl text-gray-700 hover:text-black">
-                <Button>Sign Up</Button>
-                <Button>Sign In</Button>
+                <RegistrationButton class-name="flex-1 cursor-pointer"/>
+                <LoginButton class-name="flex-1 cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]"/>
               </li>
             </ul>
           </template>

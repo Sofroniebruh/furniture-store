@@ -6,7 +6,7 @@ import Products from "@/components/Products.vue";
 import ProductPage from "@/components/ProductPage.vue";
 import Profile from "@/components/Profile.vue";
 import {useAuthStore} from "@/stores/useAuth.js";
-import AuthComponent from "@/components/AuthComponent.vue";
+import AuthComponent from "@/components/auth/AuthComponent.vue";
 import Dashboard from "@/components/Dashboard.vue";
 
 const routes = [

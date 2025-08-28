@@ -31,8 +31,10 @@ const props = defineProps({
 
 <template>
   <Dialog :open="props.isOpen">
-    <DialogTrigger>
-      <slot name="trigger"/>
+    <DialogTrigger class="w-full">
+      <div class="flex">
+        <slot name="trigger"/>
+      </div>
     </DialogTrigger>
     <DialogContent>
       <DialogHeader>
