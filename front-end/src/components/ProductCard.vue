@@ -16,6 +16,7 @@ const props = defineProps({
   }
 })
 const className = props.class
+const product = props.product
 </script>
 
 <template>

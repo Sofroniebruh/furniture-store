@@ -68,16 +68,15 @@ const scrollToTop = () => {
       <div
           class="flex items-center justify-center flex-col sm:grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
         <div v-for="(product, index) in productsData" class="w-full flex items-center justify-center">
-          <ProductCard :key="index" :product-name="product.productName"
-                       :product-colors-amount="product.amountOfColors" :product-image="product.productPicture"
-                       :product-price="product.productPrice"></ProductCard>
+          <ProductCard :key="index" :product="product"></ProductCard>
         </div>
       </div>
     </Wrapper>
   </section>
   <section id="to-the-top-button">
     <div class="w-full flex items-center justify-center mt-[34px] sm:mt-[68px]">
-      <Button variant="outline" class="hover:bg-gray-100 cursor-pointer text-base text-center" @click="scrollToTop">Back to the top
+      <Button variant="outline" class="hover:bg-gray-100 cursor-pointer text-base text-center" @click="scrollToTop">Back
+        to the top
         <ArrowUp/>
       </Button>
     </div>
