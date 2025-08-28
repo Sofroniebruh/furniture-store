@@ -6,7 +6,9 @@ import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory.js";
 import {PropType} from "vue";
 import {Product} from "@/lib/types";
+import {useWishlistStore} from "@/stores/useWishlist";
 
+const wishlistStore = useWishlistStore()
 const {toggleWishlist, addToWishlistStore} = wishlistStore
 const {removeFromWishlistComposable} = useWishlistOrHistory()
 const {setAllSheetsClosed} = useScreenSheetStore()
