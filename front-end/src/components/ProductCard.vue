@@ -1,14 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import Wrapper from "@/components/Wrapper.vue";
 import {Button} from "@/components/ui/button/index.js";
 import {Plus} from 'lucide-vue-next';
 import {cn} from "@/lib/utils.js";
+import {Product} from "@/lib/types";
+import {PropType} from "vue";
 
 const props = defineProps({
-  productName: String,
-  productPrice: Number,
-  productColorsAmount: Number,
-  productImage: String,
+  product: {
+    type: Object as PropType<Product>
+  },
   class: {
     type: String,
     required: false,
@@ -22,15 +23,15 @@ const className = props.class
     <Wrapper class="p-0 py-5 sm:p-5">
       <div class="flex flex-col gap-2 items-center">
         <div class="rounded-sm w-[150px] h-[150px] overflow-hidden">
-          <img class="w-full h-full object-cover" :src="productImage" alt="product image">
+          <img class="w-full h-full object-cover" :src="product.pictureUrls[0]" alt="product image">
         </div>
         <div class="w-full flex flex-col">
-          <p class="text-base">{{ productName }}</p>
+          <p class="text-base">{{ product.name }}</p>
           <div class="flex justify-between items-center">
-            <p class="font-bold">{{ productPrice }} &#8364;</p>
+            <p class="font-bold">{{ product.price }} &#8364;</p>
             <div class="p-1 px-2 bg-gray-100 rounded-sm">
-              <p v-if="productColorsAmount > 1">{{ productColorsAmount }} colors</p>
-              <p v-if="productColorsAmount === 1">{{ productColorsAmount }} color</p>
+              <p v-if="product.colors.length > 1">{{ product.colors.length }} colors</p>
+              <p v-if="product.colors.length === 1">{{ product.colors.length }} color</p>
             </div>
           </div>
         </div>

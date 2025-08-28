@@ -3,7 +3,6 @@ import {Product} from "@/lib/types";
 import {useWishlistStore} from "@/stores/useWishlist";
 
 export const useWishlistOrHistory = () => {
-    // Move reactive refs INSIDE the composable function
     const productsHistoryData = ref<Product[]>([])
     const wishlistError = ref<boolean>(false);
     const wishlistLoading = ref(false);
@@ -17,7 +16,7 @@ export const useWishlistOrHistory = () => {
             switch (endpoint) {
                 case "wishlist":
                     wishlistLoading.value = true
-                    isLoadingWishlist = true // Also set store loading
+                    isLoadingWishlist = true
                     wishlistError.value = false
                     break;
                 case "history":
@@ -68,7 +67,6 @@ export const useWishlistOrHistory = () => {
                     break
             }
         } finally {
-            // Always reset loading states in finally block
             switch (endpoint) {
                 case "wishlist":
                     wishlistLoading.value = false
@@ -148,6 +146,6 @@ export const useWishlistOrHistory = () => {
         historyError,
         fetchWishlistData: fetchData,
         addToWishlist,
-        removeFromWishlist,
+        removeFromWishlistComposable: removeFromWishlist,
     }
 }

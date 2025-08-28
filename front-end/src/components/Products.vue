@@ -62,10 +62,7 @@ watch(products.value, (newValue) => {
         <div v-for="(product, index) in products" :key="index"
              class="flex w-full items-center justify-center p-5 md:p-0">
           <router-link :to="`/product/${product.id}`">
-            <ProductCard class="w-full max-w-[300px]"
-                         :product-price="product.price"
-                         :product-image="product.pictureUrls[0]" :product-colors-amount="product.colors.length"
-                         :product-name="product.name"/>
+            <ProductCard class="w-full max-w-[300px]" :product="product"/>
           </router-link>
         </div>
       </div>

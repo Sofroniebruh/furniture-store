@@ -17,7 +17,7 @@ const {
   addToWishlistStore,
   saveToLocalStorage
 } = useWishlistStore()
-const {addToWishlist, removeFromWishlist} = useWishlistOrHistory()
+const {addToWishlist, removeFromWishlistComposable} = useWishlistOrHistory()
 const route = useRoute()
 
 const productId = computed(() => String(route.params.id))
@@ -49,7 +49,7 @@ const handleWishlist = async () => {
   if (!product.value) return
   const isCurrentlyInWishlist = isItemInWishlist(productId.value)
 
-  toggleWishlist(product.value)
+  await toggleWishlist(product.value)
 
   if (!isCurrentlyInWishlist) {
     try {
@@ -58,15 +58,15 @@ const handleWishlist = async () => {
       console.log("Res", res)
 
       if (res !== 201) {
-        removeFromWishlistStore(productId.value)
+        await removeFromWishlistStore(productId.value)
       }
     } catch (e) {
-      removeFromWishlistStore(productId.value)
+      await removeFromWishlistStore(productId.value)
       console.error(e)
     }
   } else {
     try {
-      const res = await removeFromWishlist(productId.value)
+      const res = await removeFromWishlistComposable(productId.value)
 
       if (res !== 200) {
         addToWishlistStore(product.value)

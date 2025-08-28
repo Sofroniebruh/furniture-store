@@ -1,5 +1,5 @@
 import {defineStore} from "pinia";
-import {ref, watch} from "vue";
+import {ref} from "vue";
 import {Product} from "@/lib/types";
 
 export const useWishlistStore = defineStore("wishlistStore", () => {
@@ -22,31 +22,29 @@ export const useWishlistStore = defineStore("wishlistStore", () => {
     const addToWishlist = (product: Product) => {
         if (!isItemInWishlist(product.id)) {
             itemsInWishlist.value = [...itemsInWishlist.value, product]
-            saveToLocalStorage() // Auto-save when adding
+            saveToLocalStorage()
             console.log("Item: " + product.name + " was added")
         } else {
             console.warn("Item: " + product.name + " was already added")
         }
     }
 
-    const removeFromWishlist = (productOrId: Product | string) => {
+    const removeFromWishlist = async (productOrId: Product | string) => {
         const productId = typeof productOrId === "string" ? productOrId : productOrId.id
         if (isItemInWishlist(productId)) {
             itemsInWishlist.value = itemsInWishlist.value.filter((item) => item.id !== productId)
-            saveToLocalStorage() // Auto-save when removing
-            console.log("Item with ID: " + productId + " was removed")
+            saveToLocalStorage()
+            console.log("Item: " + productId + " was removed")
         } else {
             console.warn("Item with ID: " + productId + " was not found")
         }
     }
 
-    const toggleWishlist = (product: Product) => {
-        console.log("Items: ", itemsInWishlist.value)
-        console.log(!isItemInWishlist(product.id))
+    const toggleWishlist = async (product: Product) => {
         if (!isItemInWishlist(product.id)) {
             addToWishlist(product)
         } else {
-            removeFromWishlist(product)
+            await removeFromWishlist(product)
         }
     }
 
@@ -55,7 +53,6 @@ export const useWishlistStore = defineStore("wishlistStore", () => {
             const stored = localStorage.getItem("wishlistItem")
             if (stored && stored !== "{}") {
                 const parsedData = JSON.parse(stored)
-                // Ensure we're dealing with an array
                 if (Array.isArray(parsedData)) {
                     itemsInWishlist.value = parsedData
                     console.log("Wishlist initialized from localStorage: ", parsedData)

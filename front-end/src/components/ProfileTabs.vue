@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import {Tabs, TabsContent, TabsList, TabsTrigger,} from '@/components/ui/tabs'
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory";
-import {computed, onMounted} from "vue";
+import {computed, onMounted, watch} from "vue";
 import ProductCardProfile from "@/components/ProductCardProfile.vue";
 import {useWishlistStore} from "@/stores/useWishlist";
 import {cn} from "@/lib/utils.js";
+import {storeToRefs} from "pinia";
 
 const {
   productsHistoryData,
@@ -21,15 +22,11 @@ const props = defineProps({
   }
 })
 
-const {itemsInWishlist, isInitialized, isLoadingWishlist} = useWishlistStore()
+const wishlistStore = useWishlistStore()
+const {itemsInWishlist} = storeToRefs(wishlistStore)
+const {isInitialized, isLoadingWishlist} = useWishlistStore()
 
-const wishlistItems = computed(() => {
-  return Array.isArray(itemsInWishlist) ? itemsInWishlist : []
-})
-
-const historyItems = computed(() => {
-  return Array.isArray(productsHistoryData.value) ? productsHistoryData.value : []
-})
+const historyItems = productsHistoryData
 
 const isWishlistLoading = computed(() => {
   return wishlistLoading.value || isLoadingWishlist || !isInitialized
@@ -49,6 +46,14 @@ onMounted(async () => {
     console.error('Error in component mount:', error)
   }
 })
+
+// In your wishlist component, add this watcher
+watch(
+    () => itemsInWishlist.value ?? [].length,
+    (newCount, oldCount) => {
+      console.log(`Wishlist count changed from ${oldCount} to ${newCount}`)
+    }
+)
 </script>
 
 <template>
@@ -71,18 +76,13 @@ onMounted(async () => {
           <div v-else-if="wishlistError" class="w-full h-full flex flex-col justify-center items-center">
             <p class="text-base font-semibold text-gray-600">Error on our side...</p>
           </div>
-          <div v-else-if="wishlistItems.length === 0" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-else-if="itemsInWishlist.length === 0" class="w-full h-full flex flex-col justify-center items-center">
             <p class="text-base font-semibold text-gray-600">No products added</p>
           </div>
           <div v-else class="w-full">
             <ProductCardProfile
-                v-for="(product, index) in wishlistItems"
-                :key="`wishlist-${product.id}-${index}`"
-                :image-src="product.pictureUrls?.[0]"
-                :name="product.name"
-                :price="product.price"
-                :id="product.id"
-                :product="product"
+                v-for="(product, index) in itemsInWishlist"
+                :key="`wishlist-${product.id}-${index}`" :product="product"
             />
           </div>
         </div>
