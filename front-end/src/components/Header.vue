@@ -16,10 +16,11 @@ const smallScreenSheet = useScreenSheetStore()
 const auth = useAuthStore()
 const route = useRoute()
 const {updateProductName} = useParams()
-const {isDialogOpen, setOpenDialog, setOpenSheet} = useScreenSheetStore()
+
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
 const isOnProductsPage = computed(() => route.path === "/products");
+const isOnProfilePage = computed(() => route.path.startsWith("/profile"));
 
 const productName = ref("")
 const timeout = ref(null)
@@ -97,9 +98,17 @@ watch(productName, (newValue) => {
               </li>
             </ul>
             <ul class="p-4">
-              <li class="flex items-center gap-2 text-2xl text-gray-700 hover:text-black">
-                <User/>
-                Profile
+              <li v-if="auth.isAuthenticated">
+                <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})"
+                             class="flex items-center gap-2 text-2xl text-gray-700 hover:text-black"
+                             :to="`/profile/${auth.user.id}`">
+                  <User/>
+                  Profile
+                </router-link>
+              </li>
+              <li v-else class="flex items-center gap-2 text-2xl text-gray-700 hover:text-black">
+                <Button>Sign Up</Button>
+                <Button>Sign In</Button>
               </li>
             </ul>
           </template>
@@ -151,7 +160,8 @@ watch(productName, (newValue) => {
           </SheetGeneral>
           <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenProfile')" title="">
             <template #trigger>
-              <li class="hidden sm:block" @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenProfile'})">
+              <li v-if="!isOnProfilePage" class="hidden sm:block"
+                  @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenProfile'})">
                 <User></User>
               </li>
             </template>

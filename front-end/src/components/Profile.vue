@@ -20,7 +20,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full w-full px-4" v-if="auth.isAuthenticated">
+  <div class="flex flex-col h-full w-full px-5" v-if="auth.isAuthenticated">
     <div>
       <Button @click.stop="handleLogout" class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Log out
         <LogOut/>
@@ -30,6 +30,6 @@ const handleLogout = () => {
       <h1 class="font-semibold text-3xl">Welcome back,</h1>
       <span class="font-base text-lg">{{ auth.user.email }}</span>
     </div>
-    <ProfileTabs></ProfileTabs>
+    <ProfileTabs class-name="flex flex-col items-center justify-center"></ProfileTabs>
   </div>
 </template>

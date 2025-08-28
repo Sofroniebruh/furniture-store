@@ -4,6 +4,7 @@ import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory";
 import {computed, onMounted} from "vue";
 import ProductCardProfile from "@/components/ProductCardProfile.vue";
 import {useWishlistStore} from "@/stores/useWishlist";
+import {cn} from "@/lib/utils.js";
 
 const {
   productsHistoryData,
@@ -13,6 +14,12 @@ const {
   historyLoading,
   historyError
 } = useWishlistOrHistory()
+
+const props = defineProps({
+  className: {
+    required: false
+  }
+})
 
 const {itemsInWishlist, isInitialized, isLoadingWishlist} = useWishlistStore()
 
@@ -45,7 +52,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col">
+  <div :class="cn('h-screen flex flex-col', props.className)">
     <Tabs default-value="wishlist" class="w-[350px] flex-1 flex flex-col">
       <TabsList class="grid w-full grid-cols-2 flex-shrink-0">
         <TabsTrigger value="wishlist">
