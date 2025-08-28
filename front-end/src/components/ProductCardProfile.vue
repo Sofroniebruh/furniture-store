@@ -3,14 +3,10 @@
 import {Button} from "@/components/ui/button/index.js";
 import {Info, Trash} from 'lucide-vue-next';
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
-import {useWishlistStore} from "@/stores/useWishlist";
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory.js";
-import {PropType, watch} from "vue";
+import {PropType} from "vue";
 import {Product} from "@/lib/types";
-import {storeToRefs} from 'pinia'
 
-const wishlistStore = useWishlistStore()
-const {itemsInWishlist} = storeToRefs(wishlistStore)
 const {toggleWishlist, addToWishlistStore} = wishlistStore
 const {removeFromWishlistComposable} = useWishlistOrHistory()
 const {setAllSheetsClosed} = useScreenSheetStore()
@@ -39,13 +35,6 @@ const handleRemoveFromWishlist = async (product: Product) => {
     addToWishlistStore(product)
   }
 }
-
-watch(
-    () => itemsInWishlist.value.length,
-    (newCount, oldCount) => {
-      console.log(`Wishlist count changed from ${oldCount} to ${newCount}`)
-    }
-)
 </script>
 
 <template>

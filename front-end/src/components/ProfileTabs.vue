@@ -46,14 +46,6 @@ onMounted(async () => {
     console.error('Error in component mount:', error)
   }
 })
-
-// In your wishlist component, add this watcher
-watch(
-    () => itemsInWishlist.value ?? [].length,
-    (newCount, oldCount) => {
-      console.log(`Wishlist count changed from ${oldCount} to ${newCount}`)
-    }
-)
 </script>
 
 <template>
