@@ -19,13 +19,18 @@ export type UserCredentialsInput = {
     password: string;
 }
 
+type AuthBody = {
+    status: number;
+    body: AuthResponse;
+}
+
 export const useAuthStore = defineStore("authStore", () => {
     const isAuthenticated = ref(false);
     const user = ref<User | null>(null);
     const error = ref<string>("")
     const loading = ref<boolean>(false);
 
-    const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput) => {
+    const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput) : Promise<AuthBody> => {
         error.value = ""
         loading.value = true;
         const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/${endpoint}`, {
@@ -51,7 +56,10 @@ export const useAuthStore = defineStore("authStore", () => {
             user.value = data?.user!
         }
 
-        return res.status
+        return {
+            status: res.status,
+            body: data
+        }
     }
     const fetchUser = async () => {
         try {
@@ -76,8 +84,6 @@ export const useAuthStore = defineStore("authStore", () => {
             })
 
             const data = await res.json()
-
-            console.log(data)
 
             if (!res.ok) {
                 isAuthenticated.value = false;
@@ -188,7 +194,7 @@ export const useAuthStore = defineStore("authStore", () => {
     }
     const login = async (body: UserCredentialsInput) => {
         try {
-            const res = await handleSendingAuthData("login", body)
+            return await handleSendingAuthData("login", body)
         } catch (e) {
             console.error(e)
         }

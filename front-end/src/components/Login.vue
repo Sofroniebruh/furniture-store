@@ -6,6 +6,7 @@ import {Button} from '@/components/ui/button'
 import {useAuthStore} from "@/stores/useAuth.js";
 import {toast} from "vue-sonner";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
+import {useRouter} from "vue-router";
 
 const schema = z.object({
   email: z.string().min(1, "Email is required").email("Email is not valid").default(""),
@@ -13,7 +14,8 @@ const schema = z.object({
 })
 
 const auth = useAuthStore()
-const {setOpenDialog} = useScreenSheetStore()
+const router = useRouter()
+const {setOpenDialog, setAllSheetsClosed} = useScreenSheetStore()
 const {handleSubmit, meta, values} = useForm({
   validationSchema: toTypedSchema(schema),
 })
@@ -31,11 +33,15 @@ const onSubmit = handleSubmit(async values => {
   try {
     const res = await auth.login(values)
 
-    console.log(res)
-
-    if (res === 200) {
+    if (res.status === 200) {
       toast.success("Log in successfully")
       setOpenDialog(false, {name: "LoginDialog"})
+
+      if (window.innerWidth < 640) {
+        setAllSheetsClosed()
+
+        await router.push("/profile/" + res.body.user.id)
+      }
     }
   } catch (error) {
     console.error(error)
