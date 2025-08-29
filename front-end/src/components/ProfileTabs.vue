@@ -35,14 +35,14 @@ const wishlistStore = useWishlistStore()
 const historyStore = useHistoryStore()
 const {itemsInWishlist} = storeToRefs(wishlistStore)
 const {itemsInHistory} = storeToRefs(historyStore)
-const {isInitialized, isLoadingWishlist,} = useWishlistStore()
-const {isInitializedHistory, isLoadingHistory} = useHistoryStore()
+const {isInitialized, isLoadingWishlist,} = storeToRefs(wishlistStore)
+const {isInitializedHistory, isLoadingHistory} = storeToRefs(historyStore)
 
 const isWishlistLoading = computed(() => {
-  return wishlistLoading.value || isLoadingWishlist || !isInitialized
+  return wishlistLoading.value || isLoadingWishlist.value || !isInitialized.value
 })
 const isHistoryLoading = computed(() => {
-  return historyLoading.value || isLoadingHistory || !isInitializedHistory
+  return historyLoading.value || isLoadingHistory.value || !isInitializedHistory.value
 })
 const isOnProfilePage = computed(() => route.path.startsWith('/profile'))
 
@@ -77,13 +77,22 @@ onMounted(async () => {
         <div
             :class="cn(isOnProfilePage ? 'w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 products-block'
             : 'h-[calc(100%-185px)] overflow-y-auto flex flex-col')">
-          <div v-if="isWishlistLoading" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-if="isWishlistLoading"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">Loading...</p>
           </div>
-          <div v-else-if="wishlistError" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-else-if="wishlistError"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">Error on our side...</p>
           </div>
-          <div v-else-if="itemsInWishlist.length === 0" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-else-if="itemsInWishlist.length === 0"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">No products added</p>
           </div>
           <template v-else>
@@ -103,13 +112,22 @@ onMounted(async () => {
         <div
             :class="cn(isOnProfilePage ? 'w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 products-block'
             : 'h-[calc(100%-185px)] overflow-y-auto flex flex-col')">
-          <div v-if="isHistoryLoading" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-if="isHistoryLoading"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">Loading...</p>
           </div>
-          <div v-else-if="historyError" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-else-if="historyError"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">Error on our side...</p>
           </div>
-          <div v-else-if="historyItems.length === 0" class="w-full h-full flex flex-col justify-center items-center">
+          <div v-else-if="itemsInHistory.length === 0"
+               :class="cn(isOnProfilePage
+                 ? 'col-span-full flex justify-center items-center min-h-[400px]'
+                 : 'flex-1 flex justify-center items-center')">
             <p class="text-base font-semibold text-gray-600">No purchases made</p>
           </div>
           <template v-else>
@@ -120,7 +138,7 @@ onMounted(async () => {
                 :is-history-card="true"
                 :product="product"
             />
-            <ProductCardProfilePage v-else v-for="(product, index) in historyItems"
+            <ProductCardProfilePage v-else v-for="(product, index) in itemsInHistory"
                                     :key="`history-${product.id}-${index}`" :is-history-card="true" :product="product"/>
           </template>
         </div>
