@@ -401,7 +401,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		countQuery += " WHERE " + strings.Join(filters, " AND ")
 	}
 
-	var totalCount int = 0
+	var totalCount = 0
 	statement, err := db.DB.PrepareNamed(countQuery)
 
 	if err != nil {

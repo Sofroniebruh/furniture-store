@@ -9,7 +9,7 @@ import (
 )
 
 type Claims struct {
-	UserId uuid.UUID `json:"userId"`
+	UserId uuid.UUID `json:"user_id"`
 	Roles  []string  `json:"roles"`
 	jwt.RegisteredClaims
 }
@@ -33,7 +33,12 @@ func RetrieveIdAndRoleFromCookie(r *http.Request, cookieName string) (uuid.UUID,
 		return uuid.Nil, nil, errors.New("unauthorized")
 	}
 
-	claims := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*Claims)
+
+	if !ok || claims == nil {
+		return uuid.Nil, nil, errors.New("invalid token claims")
+	}
+
 	id := claims.UserId
 	roles := claims.Roles
 
