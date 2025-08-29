@@ -62,7 +62,7 @@ watch(productName, (newValue) => {
   <div class="z-50 w-full backdrop-blur-sm bg-white/70 fixed top-0">
     <Wrapper>
       <div
-          :class="cn(isOnProductsPage ? 'grid lg:grid-cols-[minmax(200px,328px)_1fr_minmax(100px,auto)] sm:grid-cols-[minmax(80px,132px)_1fr_minmax(80px,auto)]' : 'grid grid-cols-[1fr_3fr_1fr]')">
+          :class="cn(isOnProductsPage && !auth.isAdmin ? 'grid lg:grid-cols-[minmax(200px,328px)_1fr_minmax(100px,auto)] sm:grid-cols-[minmax(80px,132px)_1fr_minmax(80px,auto)]' : 'grid grid-cols-[1fr_3fr_1fr]')">
         <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenMenu')" trigger-class="sm:hidden" side="left"
                       title="FUMI">
           <template #trigger>
@@ -80,7 +80,14 @@ watch(productName, (newValue) => {
                   </router-link>
                 </div>
               </li>
-              <li>
+              <li class="mt-4" v-if="auth.isAdmin">
+                <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/dashboard" class="text-2xl flex justify-between w-full items-center">
+                  <Button class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">
+                    Dashboard
+                  </Button>
+                </router-link>
+              </li>
+              <li v-if="!auth.isAdmin">
                 <div class="text-gray-700 hover:text-black">
                   <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/about"
                                class="text-2xl flex justify-between w-full items-center">
@@ -89,7 +96,7 @@ watch(productName, (newValue) => {
                   </router-link>
                 </div>
               </li>
-              <li>
+              <li v-if="!auth.isAdmin">
                 <div class="text-gray-700 hover:text-black">
                   <router-link @click="smallScreenSheet.setOpenSheet(false, {name: 'SmallScreenMenu'})" to="/contact"
                                class="text-2xl flex w-full justify-between items-center">
@@ -125,26 +132,34 @@ watch(productName, (newValue) => {
               Products
             </router-link>
           </li>
-          <li :class="cn('text-gray-700 hover:text-black', isOnAboutPage && 'text-black')">
+          <li v-if="auth.isAdmin">
+            <router-link to="/dashboard" class="text-2xl flex justify-between w-full items-center">
+              <Button class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">
+                Dashboard
+              </Button>
+            </router-link>
+          </li>
+          <li v-if="!auth.isAdmin" :class="cn('text-gray-700 hover:text-black', isOnAboutPage && 'text-black')">
             <router-link to="/about">
               About Us
             </router-link>
           </li>
-          <li :class="cn('text-gray-700 hover:text-black', isOnContactPage && 'text-black')">
+          <li v-if="!auth.isAdmin" :class="cn('text-gray-700 hover:text-black', isOnContactPage && 'text-black')">
             <router-link to="/contact">
               Contact Us
             </router-link>
           </li>
         </ul>
         <ul class="order-3 col-start-3 flex items-center justify-end gap-3">
-          <li v-if="isOnProductsPage" class="relative items-center hidden lg:flex">
+          <li v-if="isOnProductsPage && !auth.isAdmin" class="relative items-center hidden lg:flex">
             <input v-model="productName" name="search" class="pl-7 border rounded-sm px-2 py-1 bg-white" type="text"
                    placeholder="Search..."/>
             <Search class="text-gray-600 absolute top-[5px] left-1"/>
           </li>
           <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenSearch')" side="top">
             <template #trigger>
-              <li v-if="isOnProductsPage" @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenSearch'})"
+              <li v-if="isOnProductsPage && !auth.isAdmin"
+                  @click="smallScreenSheet.setOpenSheet(true, {name: 'SmallScreenSearch'})"
                   class="lg:hidden block">
                 <Search></Search>
               </li>
