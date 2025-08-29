@@ -29,8 +29,9 @@ export const useAuthStore = defineStore("authStore", () => {
     const user = ref<User | null>(null);
     const error = ref<string>("")
     const loading = ref<boolean>(false);
+    const isAdmin = ref<boolean>(false);
 
-    const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput) : Promise<AuthBody> => {
+    const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput): Promise<AuthBody> => {
         error.value = ""
         loading.value = true;
         const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/${endpoint}`, {
@@ -44,6 +45,10 @@ export const useAuthStore = defineStore("authStore", () => {
         loading.value = false;
 
         const data = await res.json() as AuthResponse;
+
+        if (data.user.roles.some(role => role === "admin")) {
+            isAdmin.value = true;
+        }
 
         if (!res.ok) {
             error.value = res.status === 401 && endpoint.endsWith("login") ? "Password and/or email are incorrect" : data?.error || "Unknown error";
@@ -83,7 +88,11 @@ export const useAuthStore = defineStore("authStore", () => {
                 credentials: "include"
             })
 
-            const data = await res.json()
+            const data = await res.json() as { user: User }
+
+            if (data.user.roles.some(role => role === "admin")) {
+                isAdmin.value = true;
+            }
 
             if (!res.ok) {
                 isAuthenticated.value = false;
@@ -179,6 +188,7 @@ export const useAuthStore = defineStore("authStore", () => {
             }
 
             isAuthenticated.value = false
+            isAdmin.value = false;
             user.value = null
         } catch (e) {
             console.error(e)
@@ -205,6 +215,7 @@ export const useAuthStore = defineStore("authStore", () => {
         isAuthenticated,
         error,
         loading,
+        isAdmin,
         fetchUser,
         registration,
         resendCode,
