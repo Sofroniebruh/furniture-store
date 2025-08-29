@@ -20,8 +20,10 @@ export const useWishlistOrHistory = () => {
         page: Number(route.query.page) || 1,
     }))
 
-    let {initFromBackend, isLoadingWishlist} = useWishlistStore()
-    let {initHistoryFromBackend, isLoadingHistory} = useHistoryStore()
+    const wishlistStore = useWishlistStore()
+    const historyStore = useHistoryStore()
+    const {initFromBackend} = wishlistStore
+    const {initHistoryFromBackend} = historyStore
 
     const setPage = async (page: number) => {
         updatePage(page)
@@ -40,12 +42,12 @@ export const useWishlistOrHistory = () => {
             switch (endpoint) {
                 case "wishlist":
                     wishlistLoading.value = true
-                    isLoadingWishlist = true
+                    wishlistStore.isLoadingWishlist = true
                     wishlistError.value = false
                     break;
                 case "history":
                     historyLoading.value = true
-                    isLoadingHistory = true
+                    historyStore.isLoadingHistory = true
                     historyError.value = false
                     break;
                 default:
@@ -101,11 +103,11 @@ export const useWishlistOrHistory = () => {
             switch (endpoint) {
                 case "wishlist":
                     wishlistLoading.value = false
-                    isLoadingWishlist = false
+                    wishlistStore.isLoadingWishlist = false
                     break
                 case "history":
                     historyLoading.value = false
-                    isLoadingHistory = false
+                    historyStore.isLoadingHistory = false
                     break
             }
         }
@@ -125,8 +127,6 @@ export const useWishlistOrHistory = () => {
                 }),
                 credentials: "include",
             })
-
-            const data = await res.json() as { product: Product }
 
             if (!res.ok) {
                 wishlistError.value = true;
