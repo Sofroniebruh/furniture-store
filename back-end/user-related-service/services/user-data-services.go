@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 	"log"
 	"net/http"
+	"strconv"
 	"user-related-service/config"
 	"user-related-service/db"
 	"user-related-service/models"
@@ -209,7 +210,29 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 	var products []models.Product
 	urlType := r.URL.Path
 	var query string
+	var totalCount int
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+	page, err := strconv.Atoi(pageStr)
 
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	offset := (page - 1) * limit
 	switch urlType {
 	case "/user/wishlist":
 		query = `
@@ -217,14 +240,21 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
             FROM products p
             JOIN wishlists w ON p.id = w.product_id
             WHERE w.user_id = $1
+            LIMIT $2
+            OFFSET $3
+            
             `
+		err = db.DB.Get(&totalCount, "SELECT COUNT(*) FROM wishlists WHERE user_id = $1", userId)
 	case "/user/history":
 		query = `
             SELECT p.* 
             FROM products p
             JOIN histories w ON p.id = w.product_id
             WHERE w.user_id = $1
+        	LIMIT $2
+            OFFSET $3
             `
+		err = db.DB.Get(&totalCount, "SELECT COUNT(*) FROM histories WHERE user_id = $1", userId)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
@@ -233,7 +263,7 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.DB.Query(query, userId)
+	rows, err := db.DB.Query(query, userId, limit, offset)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -270,11 +300,14 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		product.PictureUrls = pictureUrls
+
 		products = append(products, product)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"products": products,
+		"total":    totalCount,
 	})
 }

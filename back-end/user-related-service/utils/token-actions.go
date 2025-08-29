@@ -8,8 +8,14 @@ import (
 	"user-related-service/config"
 )
 
+type Claims struct {
+	UserID uuid.UUID `json:"user_id"`
+	Roles  []string  `json:"roles"`
+	jwt.RegisteredClaims
+}
+
 func ParseToken(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) { return config.JWT_SECRET, nil })
+	return jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) { return config.JWT_SECRET, nil })
 }
 
 func RetrieveIdFromCookie(r *http.Request, cookieName string) (uuid.UUID, error) {
@@ -25,6 +31,7 @@ func RetrieveIdFromCookie(r *http.Request, cookieName string) (uuid.UUID, error)
 		return uuid.Nil, errors.New("invalid token")
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	return uuid.Parse(claims["sub"].(string))
+	claims := token.Claims.(*Claims)
+	id := claims.UserID
+	return id, nil
 }
