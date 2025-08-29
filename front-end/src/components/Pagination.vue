@@ -2,27 +2,43 @@
 
 import {Button} from "@/components/ui/button/index.js";
 import {ChevronLeft, ChevronRight} from 'lucide-vue-next';
-import {useProducts} from "@/composables/useProducts.js";
 import {cn} from "@/lib/utils.js";
 import {computed} from "vue";
 
-const {setPage, currentPage, totalPages, handleNext, handlePrevious} = useProducts()
-const range = computed(() => Array.from({length: totalPages.value}))
+const props = defineProps({
+  currentPage: {
+    type: Number,
+  },
+  totalPages: {
+    type: Number,
+  },
+  setPage: {
+    type: Function,
+  },
+  handleNext: {
+    type: Function,
+  },
+  handlePrevious: {
+    type: Function,
+  }
+})
+
+const range = computed(() => Array.from({length: props.totalPages}, (_, i) => i + 1))
 
 const prev = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-  handlePrevious(currentPage.value - 1)
+  window.scrollTo({top: 0, behavior: 'smooth'})
+  props.handlePrevious()
 }
+
 const next = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-  handleNext(currentPage.value + 1)
+  window.scrollTo({top: 0, behavior: 'smooth'})
+  props.handleNext()
 }
+
 const set = (pageNumber) => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-  setPage(pageNumber)
+  window.scrollTo({top: 0, behavior: 'smooth'})
+  props.setPage(pageNumber)
 }
-
-
 </script>
 
 <template>
@@ -33,11 +49,11 @@ const set = (pageNumber) => {
     </Button>
     <div class="flex gap-1">
       <div
-          @click="set(index + 1)"
-          :class="cn('p-2 px-4 rounded-sm hover:bg-gray-100 cursor-pointer', index + 1 === currentPage ? 'border' : '')"
-          v-for="(page, index) in range"
-          :key="index">
-        <p>{{ index + 1 }}</p>
+          @click="set(page)"
+          :class="cn('p-2 px-4 rounded-sm hover:bg-gray-100 cursor-pointer', page === currentPage ? 'border' : '')"
+          v-for="page in range"
+          :key="page">
+        <p>{{ page }}</p>
       </div>
     </div>
     <Button @click="next" :disabled="currentPage >= totalPages" class="cursor-pointer"

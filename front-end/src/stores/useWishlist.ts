@@ -83,8 +83,6 @@ export const useWishlistStore = defineStore("wishlistStore", () => {
         }
     }
 
-    // Note: Initialization is handled in App.vue
-
     return {
         itemsInWishlist,
         isLoadingWishlist,

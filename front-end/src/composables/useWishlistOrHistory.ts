@@ -1,15 +1,39 @@
-import {ref} from "vue";
+import {computed, ref} from "vue";
 import {Product} from "@/lib/types";
 import {useWishlistStore} from "@/stores/useWishlist";
+import {useHistoryStore} from "@/stores/useHistory";
+import {useRoute} from "vue-router";
+import {useParams} from "@/composables/useParams";
 
 export const useWishlistOrHistory = () => {
-    const productsHistoryData = ref<Product[]>([])
     const wishlistError = ref<boolean>(false);
     const wishlistLoading = ref(false);
     const historyLoading = ref<boolean>(false);
     const historyError = ref<boolean>(false);
+    const totalPages = ref<number>(0);
+
+    const route = useRoute()
+    const {updatePage} = useParams()
+    const limit = import.meta.env.VITE_PRODUCTS_PER_PAGE_LIMIT
+
+    const filters = computed(() => ({
+        page: Number(route.query.page) || 1,
+    }))
 
     let {initFromBackend, isLoadingWishlist} = useWishlistStore()
+    let {initHistoryFromBackend, isLoadingHistory} = useHistoryStore()
+
+    const setPage = async (page: number) => {
+        updatePage(page)
+    }
+
+    const handleNext = async (pageNumber: number) => {
+        await setPage(pageNumber)
+    }
+
+    const handlePrevious = async (pageNumber: number) => {
+        await setPage(pageNumber)
+    }
 
     const fetchData = async (endpoint: string) => {
         try {
@@ -21,18 +45,23 @@ export const useWishlistOrHistory = () => {
                     break;
                 case "history":
                     historyLoading.value = true
+                    isLoadingHistory = true
                     historyError.value = false
                     break;
                 default:
                     return
             }
 
-            const res = await fetch(`${import.meta.env.VITE_USER_RELATED_SERVICE_URL}/user/${endpoint}`, {
+            const baseUrl = computed(() => `${import.meta.env.VITE_USER_RELATED_SERVICE_URL}/user/${endpoint}?page=${filters.value.page}&limit=${limit}`)
+
+            console.log(baseUrl.value)
+
+            const res = await fetch(`${baseUrl.value}`, {
                 method: "GET",
                 credentials: "include",
             })
 
-            const data = await res.json()
+            const data = await res.json() as { products: Product[], total: number }
 
             if (!res.ok) {
                 switch (endpoint) {
@@ -46,9 +75,11 @@ export const useWishlistOrHistory = () => {
                 return
             }
 
+            totalPages.value = data.total
+
             switch (endpoint) {
                 case "history":
-                    productsHistoryData.value = data?.products ?? []
+                    initHistoryFromBackend(data?.products ?? [])
                     break
                 case "wishlist":
                     initFromBackend(data?.products ?? [])
@@ -74,6 +105,7 @@ export const useWishlistOrHistory = () => {
                     break
                 case "history":
                     historyLoading.value = false
+                    isLoadingHistory = false
                     break
             }
         }
@@ -139,11 +171,15 @@ export const useWishlistOrHistory = () => {
     }
 
     return {
-        productsHistoryData,
         wishlistLoading,
         wishlistError,
         historyLoading,
         historyError,
+        totalPages,
+        currentPage: computed(() => filters.value.page),
+        handlePrevious,
+        handleNext,
+        setPage,
         fetchWishlistData: fetchData,
         addToWishlist,
         removeFromWishlistComposable: removeFromWishlist,

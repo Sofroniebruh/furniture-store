@@ -9,14 +9,19 @@ import {storeToRefs} from "pinia";
 import {useRoute} from "vue-router";
 import ProductCardProfilePage from "@/components/product-related/ProductCardProfilePage.vue";
 import Pagination from "@/components/Pagination.vue";
+import {useHistoryStore} from "@/stores/useHistory";
 
 const {
-  productsHistoryData,
   fetchWishlistData,
   wishlistLoading,
   wishlistError,
   historyLoading,
-  historyError
+  historyError,
+  currentPage,
+  totalPages,
+  setPage,
+  handlePrevious,
+  handleNext,
 } = useWishlistOrHistory()
 
 const props = defineProps({
@@ -27,16 +32,17 @@ const props = defineProps({
 
 const route = useRoute()
 const wishlistStore = useWishlistStore()
+const historyStore = useHistoryStore()
 const {itemsInWishlist} = storeToRefs(wishlistStore)
-const {isInitialized, isLoadingWishlist} = useWishlistStore()
-
-const historyItems = productsHistoryData
+const {itemsInHistory} = storeToRefs(historyStore)
+const {isInitialized, isLoadingWishlist,} = useWishlistStore()
+const {isInitializedHistory, isLoadingHistory} = useHistoryStore()
 
 const isWishlistLoading = computed(() => {
   return wishlistLoading.value || isLoadingWishlist || !isInitialized
 })
 const isHistoryLoading = computed(() => {
-  return historyLoading.value
+  return historyLoading.value || isLoadingHistory || !isInitializedHistory
 })
 const isOnProfilePage = computed(() => route.path.startsWith('/profile'))
 
@@ -109,7 +115,7 @@ onMounted(async () => {
           <template v-else>
             <ProductCardProfile
                 v-if="!isOnProfilePage"
-                v-for="(product, index) in historyItems"
+                v-for="(product, index) in itemsInHistory"
                 :key="`history-${product.id}-${index}`"
                 :is-history-card="true"
                 :product="product"
@@ -120,6 +126,11 @@ onMounted(async () => {
         </div>
       </TabsContent>
     </Tabs>
-    <Pagination v-if="isOnProfilePage"/>
+    <Pagination :set-page="setPage"
+                :current-page="currentPage"
+                :handle-next="handleNext"
+                :handle-previous="handlePrevious"
+                :total-pages="totalPages"
+                v-if="isOnProfilePage"/>
   </div>
 </template>

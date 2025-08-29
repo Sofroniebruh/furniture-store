@@ -12,7 +12,16 @@ import {onMounted} from "vue";
 import Pagination from "@/components/Pagination.vue";
 
 const smallScreenSheet = useScreenSheetStore()
-const {products, loading, error, fetchProducts} = useProducts()
+const {
+  products,
+  error,
+  fetchProducts,
+  currentPage,
+  handleNext,
+  setPage,
+  handlePrevious,
+  totalPages
+} = useProducts()
 
 onMounted(async () => {
   await fetchProducts()
@@ -40,12 +49,13 @@ onMounted(async () => {
     <Wrapper class="hidden w-1/4 md:block pr-0">
       <Sorting/>
     </Wrapper>
-    <Wrapper class="p-0 md:pl-5 md:pt-5 pb-0 w-full md:w-3/4 flex flex-col items-center min-h-[calc(100dvh-200px-68px-76px)]">
-<!--      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">-->
-<!--        <div v-for="n in 8" :key="n" class="flex w-full items-center justify-center p-5 md:p-0">-->
-<!--          <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>-->
-<!--        </div>-->
-<!--      </div>-->
+    <Wrapper
+        class="p-0 md:pl-5 md:pt-5 pb-0 w-full md:w-3/4 flex flex-col items-center min-h-[calc(100dvh-200px-68px-76px)]">
+      <!--      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">-->
+      <!--        <div v-for="n in 8" :key="n" class="flex w-full items-center justify-center p-5 md:p-0">-->
+      <!--          <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>-->
+      <!--        </div>-->
+      <!--      </div>-->
       <div class="flex justify-center items-center md:h-full h-[calc(100vh-200px-68px-76px)]"
            v-if="products === undefined || products === null">
         <h1 class="font-semibold text-base sm:text-lg">No products matching your request</h1>
@@ -62,7 +72,12 @@ onMounted(async () => {
           </router-link>
         </div>
       </div>
-      <Pagination v-if="products !== null"/>
+      <Pagination :set-page="setPage"
+                  :current-page="currentPage"
+                  :handle-next="handleNext"
+                  :handle-previous="handlePrevious"
+                  :total-pages="totalPages"
+                  v-if="products !== null"/>
     </Wrapper>
   </div>
 </template>
