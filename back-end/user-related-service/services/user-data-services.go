@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"user-related-service/config"
@@ -305,9 +306,11 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 		products = append(products, product)
 	}
 
+	totalPages := int(math.Ceil(float64(totalCount) / float64(limit)))
+
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"products": products,
-		"total":    totalCount,
+		"total":    totalPages,
 	})
 }
