@@ -2,7 +2,7 @@
 import Wrapper from "@/components/Wrapper.vue";
 import ReviewCard from "@/components/ReviewCard.vue";
 import {productsData, reviews} from "@/lib/data.js";
-import ProductCard from "@/components/ProductCard.vue";
+import ProductCard from "@/components/product-related/ProductCard.vue";
 import {Button} from "@/components/ui/button/index.js";
 import {ArrowUp} from 'lucide-vue-next';
 

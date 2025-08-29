@@ -10,15 +10,15 @@ const {setPage, currentPage, totalPages, handleNext, handlePrevious} = useProduc
 const range = computed(() => Array.from({length: totalPages.value}))
 
 const prev = () => {
-  window.scrollTo({top: 0})
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   handlePrevious(currentPage.value - 1)
 }
 const next = () => {
-  window.scrollTo({top: 0})
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   handleNext(currentPage.value + 1)
 }
 const set = (pageNumber) => {
-  window.scrollTo({top: 0})
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   setPage(pageNumber)
 }
 

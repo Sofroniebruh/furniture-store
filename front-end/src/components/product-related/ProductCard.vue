@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Wrapper from "@/components/Wrapper.vue";
-import {Button} from "@/components/ui/button/index.js";
+import {Button} from "@/components/ui/button";
 import {Plus} from 'lucide-vue-next';
 import {cn} from "@/lib/utils.js";
 import {Product} from "@/lib/types";

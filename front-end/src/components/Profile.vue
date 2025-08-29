@@ -34,6 +34,6 @@ const handleLogout = async () => {
       <h1 class="font-semibold text-3xl">Welcome back,</h1>
       <span class="font-base text-lg">{{ auth.user.email }}</span>
     </div>
-    <ProfileTabs class-name="flex flex-col items-center justify-center"></ProfileTabs>
+    <ProfileTabs :is-profile-page="true" class-name="flex flex-col items-center justify-center"></ProfileTabs>
   </div>
 </template>

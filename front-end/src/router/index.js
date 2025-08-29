@@ -3,7 +3,7 @@ import {createRouter, createWebHistory} from "vue-router";
 import AboutUs from "@/components/AboutUs.vue";
 import ContactUs from "@/components/ContactUs.vue";
 import Products from "@/components/Products.vue";
-import ProductPage from "@/components/ProductPage.vue";
+import ProductPage from "@/components/product-related/ProductPage.vue";
 import Profile from "@/components/Profile.vue";
 import {useAuthStore} from "@/stores/useAuth.js";
 import AuthComponent from "@/components/auth/AuthComponent.vue";

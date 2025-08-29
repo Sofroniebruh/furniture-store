@@ -1,6 +1,6 @@
 <script setup>
 
-import ProductCard from "@/components/ProductCard.vue";
+import ProductCard from "@/components/product-related/ProductCard.vue";
 import Wrapper from "@/components/Wrapper.vue";
 import Sorting from "@/components/Sorting.vue";
 import {SlidersHorizontal} from 'lucide-vue-next';
@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/button/index.js";
 import SheetGeneral from "@/components/SheetGeneral.vue";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.ts";
 import {useProducts} from "@/composables/useProducts.js";
-import {onMounted, watch} from "vue";
+import {onMounted} from "vue";
 import Pagination from "@/components/Pagination.vue";
 
 const smallScreenSheet = useScreenSheetStore()
@@ -18,14 +18,10 @@ onMounted(async () => {
   await fetchProducts()
 })
 
-watch(products.value, (newValue) => {
-  products.value = newValue;
-}, {immediate: true})
-
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row">
+  <div class="flex flex-col md:flex-row h-full">
     <Wrapper class="md:hidden block">
       <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('SmallScreenFiltering')" title="FUMI" side="left">
         <template #trigger>
@@ -44,14 +40,14 @@ watch(products.value, (newValue) => {
     <Wrapper class="hidden w-1/4 md:block pr-0">
       <Sorting/>
     </Wrapper>
-    <Wrapper class="p-0 md:pl-5 md:pt-5 pb-0 w-full md:w-3/4">
-      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">
-        <div v-for="n in 8" :key="n" class="flex w-full items-center justify-center p-5 md:p-0">
-          <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>
-        </div>
-      </div>
+    <Wrapper class="p-0 md:pl-5 md:pt-5 pb-0 w-full md:w-3/4 flex flex-col items-center min-h-[calc(100dvh-200px-68px-76px)]">
+<!--      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">-->
+<!--        <div v-for="n in 8" :key="n" class="flex w-full items-center justify-center p-5 md:p-0">-->
+<!--          <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>-->
+<!--        </div>-->
+<!--      </div>-->
       <div class="flex justify-center items-center md:h-full h-[calc(100vh-200px-68px-76px)]"
-           v-else-if="products === undefined || products === null">
+           v-if="products === undefined || products === null">
         <h1 class="font-semibold text-base sm:text-lg">No products matching your request</h1>
       </div>
       <div v-else-if="error" class="text-center py-8">
@@ -59,7 +55,7 @@ watch(products.value, (newValue) => {
         <Button @click="fetchProducts" class="mt-4">Retry</Button>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">
-        <div v-for="(product, index) in products" :key="index"
+        <div v-for="(product, index) in products" :key="product.id"
              class="flex w-full items-center justify-center p-5 md:p-0">
           <router-link :to="`/product/${product.id}`">
             <ProductCard class="w-full max-w-[300px]" :product="product"/>

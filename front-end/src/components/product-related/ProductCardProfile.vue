@@ -1,17 +1,10 @@
 <script setup lang="ts">
 
-import {Button} from "@/components/ui/button/index.js";
-import {Info, Trash} from 'lucide-vue-next';
-import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
-import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory.js";
 import {PropType} from "vue";
 import {Product} from "@/lib/types";
-import {useWishlistStore} from "@/stores/useWishlist";
+import WishlistDelete from "@/components/product-related/WishlistDelete.vue";
+import PurchaseHistory from "@/components/product-related/PurchaseHistory.vue";
 
-const wishlistStore = useWishlistStore()
-const {toggleWishlist, addToWishlistStore} = wishlistStore
-const {removeFromWishlistComposable} = useWishlistOrHistory()
-const {setAllSheetsClosed} = useScreenSheetStore()
 
 defineProps({
   product: {
@@ -22,21 +15,6 @@ defineProps({
     default: false
   }
 })
-
-const handleRemoveFromWishlist = async (product: Product) => {
-  await toggleWishlist(product)
-
-  try {
-    const res = await removeFromWishlistComposable(product.id)
-
-    if (res !== 200) {
-      addToWishlistStore(product)
-    }
-  } catch (e) {
-    console.error(e)
-    addToWishlistStore(product)
-  }
-}
 </script>
 
 <template>
@@ -50,14 +28,7 @@ const handleRemoveFromWishlist = async (product: Product) => {
         <p class="text-sm font-semibold">{{ product.price }} &#8364;</p>
       </div>
     </div>
-    <Button v-if="!isHistoryCard" @click="() => handleRemoveFromWishlist(product)" size="sm" class="cursor-pointer"
-            variant="outline">
-      <Trash/>
-    </Button>
-    <router-link v-else @click="setAllSheetsClosed" :to="`/product/${product.id}`">
-      <Button size="sm" class="cursor-pointer" variant="outline">
-        <Info/>
-      </Button>
-    </router-link>
+    <WishlistDelete :product="product" v-if="!isHistoryCard"/>
+    <PurchaseHistory :product="product" v-else/>
   </div>
 </template>
