@@ -27,12 +27,12 @@ const range = computed(() => Array.from({length: props.totalPages}, (_, i) => i 
 
 const prev = () => {
   window.scrollTo({top: 0, behavior: 'smooth'})
-  props.handlePrevious()
+  props.handlePrevious(props.currentPage - 1)
 }
 
 const next = () => {
   window.scrollTo({top: 0, behavior: 'smooth'})
-  props.handleNext()
+  props.handleNext(props.currentPage + 1)
 }
 
 const set = (pageNumber) => {

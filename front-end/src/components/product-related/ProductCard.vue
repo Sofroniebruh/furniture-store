@@ -8,7 +8,8 @@ import {PropType} from "vue";
 
 const props = defineProps({
   product: {
-    type: Object as PropType<Product>
+    type: Object as PropType<Product>,
+    required: true
   },
   class: {
     type: String,
@@ -17,6 +18,8 @@ const props = defineProps({
 })
 const className = props.class
 const product = props.product
+
+console.log(product)
 </script>
 
 <template>

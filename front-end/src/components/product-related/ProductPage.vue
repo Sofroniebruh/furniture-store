@@ -8,6 +8,9 @@ import {cn} from "@/lib/utils";
 import {CheckCircle, ChevronLeft, ChevronRight, Heart, Shield, Truck} from 'lucide-vue-next'
 import {useWishlistStore} from "@/stores/useWishlist";
 import {useWishlistOrHistory} from "@/composables/useWishlistOrHistory";
+import {useAuthStore} from "@/stores/useAuth";
+import {toast} from "vue-sonner";
+import {useCart} from "@/composables/useCart";
 
 const {fetchProductById, product, loading, error} = useProducts()
 const {
@@ -18,6 +21,8 @@ const {
   saveToLocalStorage
 } = useWishlistStore()
 const {addToWishlist, removeFromWishlistComposable} = useWishlistOrHistory()
+const authStore = useAuthStore()
+const {addToCart} = useCart()
 const route = useRoute()
 
 const productId = computed(() => String(route.params.id))
@@ -30,8 +35,8 @@ const activeImage = computed(() => images.value[activeImageIdx.value] ?? "")
 const hasPrev = computed(() => activeImageIdx.value > 0)
 const hasNext = computed(() => activeImageIdx.value < images.value.length - 1)
 
-const isInStock = computed(() => (product.value?.amount ?? 0) > 0)
-const maxQty = computed(() => Math.max(product.value?.amount ?? 0, 0))
+const isInStock = computed(() => (product.value?.stock ?? 0) > 0)
+const maxQty = computed(() => Math.max(product.value?.stock ?? 0, 0))
 
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(value)
@@ -47,6 +52,14 @@ const incQty = () => {
 
 const handleWishlist = async () => {
   if (!product.value) return
+
+  console.log(authStore.isAuthenticated)
+
+  if (!authStore.isAuthenticated) {
+    toast("Log In to add")
+    return
+  }
+
   const isCurrentlyInWishlist = isItemInWishlist(productId.value)
 
   await toggleWishlist(product.value)
@@ -79,6 +92,12 @@ const handleWishlist = async () => {
 
   saveToLocalStorage()
 }
+
+const handleAddToCart = async () => {
+  if (!product.value) return
+  await addToCart(product.value.id, quantity.value)
+}
+
 const goPrev = () => {
   if (hasPrev.value) activeImageIdx.value -= 1
 }
@@ -207,7 +226,7 @@ onBeforeUnmount(() => {
                       :disabled="!isInStock">+
               </button>
             </div>
-            <Button class="cursor-pointer" :disabled="!isInStock">Add to cart</Button>
+            <Button @click="handleAddToCart" class="cursor-pointer" :disabled="!isInStock">Add to cart</Button>
             <Button @click="handleWishlist" variant="outline"
                     class="cursor-pointer"
                     aria-label="Add to wishlist">

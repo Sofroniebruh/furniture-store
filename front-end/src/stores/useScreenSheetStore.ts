@@ -5,7 +5,7 @@ type ScreenSheet = {
 }
 
 type ScreenDialog = {
-    name: "RegisterDialog" | "LoginDialog";
+    name: "RegisterDialog" | "LoginDialog" | "CreationDialog";
 }
 
 export const useScreenSheetStore = defineStore("smallScreenSheetStore", {

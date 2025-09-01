@@ -6,13 +6,16 @@ import {Toaster} from '@/components/ui/sonner'
 import 'vue-sonner/style.css'
 import {onMounted, watch} from "vue";
 import {useWishlistStore} from "@/stores/useWishlist.js";
+import {useHistoryStore} from "@/stores/useHistory.js";
 
 const {fetchUser, isAuthenticated} = useAuthStore()
-const {initFromLocalStorage} = useWishlistStore()
+const {initFromLocalStorage: initWishlistFromLocalStorage} = useWishlistStore()
+const {initFromLocalStorage: initHistoryFromLocalStorage} = useHistoryStore()
 
 onMounted(async () => {
   await fetchUser()
-  initFromLocalStorage()
+  initWishlistFromLocalStorage()
+  initHistoryFromLocalStorage()
 })
 
 watch(isAuthenticated, async () => {

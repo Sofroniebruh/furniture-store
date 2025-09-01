@@ -3,17 +3,15 @@ import {Product} from "@/lib/types";
 import {useRoute} from "vue-router";
 import {useParams} from "@/composables/useParams";
 
-
-const products = ref<Product[]>([])
-const product = ref<Product | null>(null)
-const error = ref<boolean>(false)
-const loading = ref<boolean>(false)
-const totalPages = ref<Number>(0)
-
 export function useProducts() {
     const route = useRoute()
     const limit = import.meta.env.VITE_PRODUCTS_PER_PAGE_LIMIT
     const backendUrl = import.meta.env.VITE_BACKEND_URL
+    const products = ref<Product[]>([])
+    const product = ref<Product | null>(null)
+    const error = ref<boolean>(false)
+    const loading = ref<boolean>(false)
+    const totalPages = ref<Number>(0)
 
     const {updatePage} = useParams()
 
@@ -55,11 +53,12 @@ export function useProducts() {
                 }
             })
 
-            const data = await res.json() as { products: Product[], totalPages: Number }
-
             if (!res.ok) {
                 throw new Error(`Failed to fetch ${backendUrl}. Status: ` + res.status)
             }
+
+            const data = await res.json() as { products: Product[], totalPages: Number }
+            console.log(data)
 
             products.value = data.products
             totalPages.value = data.totalPages
@@ -84,14 +83,14 @@ export function useProducts() {
                 }
             })
 
-            const data = await res.json() as { product: Product }
-
             if (!res.ok) {
                 product.value = null
                 error.value = true
                 console.error(`Failed to fetch ${backendUrl}. Status: ` + res.status)
                 return {status: res.status}
             }
+
+            const data = await res.json() as { product: Product }
 
             product.value = data.product
             return {status: 200}

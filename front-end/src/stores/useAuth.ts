@@ -21,11 +21,11 @@ export type UserCredentialsInput = {
 
 type AuthBody = {
     status: number;
-    body: AuthResponse;
+    body?: AuthResponse;
 }
 
 export const useAuthStore = defineStore("authStore", () => {
-    const isAuthenticated = ref(false);
+    const isAuthenticated = ref<boolean>(false);
     const user = ref<User | null>(null);
     const error = ref<string>("")
     const loading = ref<boolean>(false);
@@ -46,14 +46,16 @@ export const useAuthStore = defineStore("authStore", () => {
 
         const data = await res.json() as AuthResponse;
 
-        if (data.user.roles.some(role => role === "admin")) {
+        if (data.user!.roles.some(role => role === "admin")) {
             isAdmin.value = true;
         }
 
         if (!res.ok) {
             error.value = res.status === 401 && endpoint.endsWith("login") ? "Password and/or email are incorrect" : data?.error || "Unknown error";
             console.error("Error: ", error.value);
-            return res.status;
+            return {
+                status: res.status
+            };
         }
 
         if (endpoint.endsWith("login")) {

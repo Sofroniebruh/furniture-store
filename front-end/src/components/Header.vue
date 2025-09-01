@@ -13,11 +13,22 @@ import Profile from "@/components/Profile.vue";
 import AuthComponent from "@/components/auth/AuthComponent.vue";
 import RegistrationButton from "@/components/auth/RegistrationButton.vue";
 import LoginButton from "@/components/auth/LoginButton.vue";
+import CartIcon from "@/components/cart/CartIcon.vue";
+import CartDropdown from "@/components/cart/CartDropdown.vue";
+import {useCart} from "@/composables/useCart";
 
 const smallScreenSheet = useScreenSheetStore()
 const auth = useAuthStore()
 const route = useRoute()
 const {updateProductName} = useParams()
+const {loadCart} = useCart()
+
+// Watch for authentication changes and load cart
+watch(() => auth.isAuthenticated, (isAuthenticated) => {
+  if (isAuthenticated) {
+    loadCart()
+  }
+}, { immediate: true })
 
 const isOnAboutPage = computed(() => route.path === "/about");
 const isOnContactPage = computed(() => route.path === "/contact");
@@ -134,7 +145,7 @@ watch(productName, (newValue) => {
           </li>
           <li v-if="auth.isAdmin">
             <router-link to="/dashboard" class="text-2xl flex justify-between w-full items-center">
-              <Button class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">
+              <Button variant="outline" class="cursor-pointer">
                 Dashboard
               </Button>
             </router-link>
@@ -189,14 +200,14 @@ watch(productName, (newValue) => {
               </div>
             </template>
           </SheetGeneral>
-          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="Your Cart">
+          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="">
             <template #trigger>
               <li @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenCart'})">
-                <ShoppingBag></ShoppingBag>
+                <CartIcon />
               </li>
             </template>
             <template #content>
-              <h1>Content!</h1>
+              <CartDropdown @close="smallScreenSheet.setOpenSheet(false, {name: 'ScreenCart'})" />
             </template>
           </SheetGeneral>
         </ul>

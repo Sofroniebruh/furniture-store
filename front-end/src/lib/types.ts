@@ -1,16 +1,16 @@
 export interface Product {
     id: string;
     name: string;
-    amount: number;
+    stock: number;
     price: number;
     description: string;
     pictureUrls: string[];
     event: string;
     model: string;
-    colors: Colors[];
+    colors: Color[];
 }
 
-export interface Colors {
-    id: string;
+export interface Color {
+    id?: string;
     name: string;
 }

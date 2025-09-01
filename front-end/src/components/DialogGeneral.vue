@@ -14,6 +14,10 @@ const props = defineProps({
     type: String,
     required: false,
   },
+  className: {
+    type: String,
+    default: ""
+  },
   description: {
     type: String,
     required: false,
@@ -36,7 +40,7 @@ const props = defineProps({
         <slot name="trigger"/>
       </div>
     </DialogTrigger>
-    <DialogContent>
+    <DialogContent :class="props.className">
       <DialogHeader>
         <DialogTitle>{{ props.title }}</DialogTitle>
         <DialogDescription>

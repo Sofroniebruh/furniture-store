@@ -7,7 +7,10 @@ import ProductPage from "@/components/product-related/ProductPage.vue";
 import Profile from "@/components/Profile.vue";
 import {useAuthStore} from "@/stores/useAuth.js";
 import AuthComponent from "@/components/auth/AuthComponent.vue";
-import Dashboard from "@/components/Dashboard.vue";
+import Dashboard from "@/components/dashboard-related/Dashboard.vue";
+import CartPage from "@/components/cart/CartPage.vue";
+import CheckoutPage from "@/components/checkout/CheckoutPage.vue";
+import CheckoutSuccess from "@/components/checkout/CheckoutSuccess.vue";
 
 const routes = [
     {
@@ -57,6 +60,23 @@ const routes = [
         component: ProductPage,
     },
     {
+        path: "/cart",
+        name: "Cart",
+        component: CartPage,
+    },
+    {
+        path: "/checkout",
+        name: "checkout",
+        component: CheckoutPage,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: "/checkout/success",
+        name: "checkout-success",
+        component: CheckoutSuccess,
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         redirect: '/'
@@ -71,10 +91,13 @@ export const router = createRouter({
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
 
-    try {
-        await authStore.fetchUser()
-    } catch (error) {
-        console.error('Error fetching user:', error)
+    // Only fetch user if not already authenticated or if navigating to protected routes
+    if (!authStore.isAuthenticated && (to.meta.requiresAuth || to.meta.roles)) {
+        try {
+            await authStore.fetchUser()
+        } catch (error) {
+            console.error('Error fetching user:', error)
+        }
     }
 
     const isAuthenticated = authStore.isAuthenticated

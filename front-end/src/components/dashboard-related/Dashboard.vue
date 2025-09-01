@@ -1,34 +1,20 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {productsData} from '@/lib/data'
 import type {Product} from '@/lib/types'
 import DialogGeneral from "@/components/DialogGeneral.vue";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore";
+import CreateDialogContent from "./CreateDialogContent.vue";
 
 const products = ref<Product[]>([])
 const selectedProduct = ref<Product | null>(null)
 const isEditModalOpen = ref(false)
-const isAddModalOpen = ref(false)
 const isDeleteModalOpen = ref(false)
 const searchQuery = ref('')
 const sortBy = ref('name')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
-const isMobileMenuOpen = ref(false)
-const viewMode = ref<'cards' | 'table'>('cards') // Default to cards for better mobile experience
-
-// Form data for adding/editing products
-const formData = reactive({
-  name: '',
-  description: '',
-  price: 0,
-  amount: 0,
-  model: '',
-  event: 'none',
-  pictureUrls: [''],
-  colors: [{id: '', name: ''}]
-})
 
 // Stock management
 const stockHistory = ref<Array<{
@@ -47,11 +33,6 @@ const stockHistory = ref<Array<{
 onMounted(() => {
   products.value = [...productsData]
   loadStockHistory()
-
-  // Set view mode based on screen size
-  if (window.innerWidth < 768) {
-    viewMode.value = 'cards'
-  }
 })
 
 // Computed properties
@@ -101,22 +82,8 @@ const dashboardStats = computed(() => ({
 }))
 
 // CRUD Operations
-const openAddModal = () => {
-  resetForm()
-  isAddModalOpen.value = true
-  document.body.style.overflow = 'hidden' // Prevent background scroll
-}
-
 const openEditModal = (product: Product) => {
   selectedProduct.value = product
-  formData.name = product.name
-  formData.description = product.description
-  formData.price = product.price
-  formData.amount = product.amount
-  formData.model = product.model
-  formData.event = product.event
-  formData.pictureUrls = [...product.pictureUrls]
-  formData.colors = [...product.colors]
   isEditModalOpen.value = true
   document.body.style.overflow = 'hidden'
 }
@@ -128,79 +95,10 @@ const openDeleteModal = (product: Product) => {
 }
 
 const closeModals = () => {
-  isAddModalOpen.value = false
   isEditModalOpen.value = false
   isDeleteModalOpen.value = false
   selectedProduct.value = null
   document.body.style.overflow = 'auto'
-}
-
-const resetForm = () => {
-  formData.name = ''
-  formData.description = ''
-  formData.price = 0
-  formData.amount = 0
-  formData.model = ''
-  formData.event = 'none'
-  formData.pictureUrls = ['']
-  formData.colors = [{id: '', name: ''}]
-}
-
-const addProduct = () => {
-  const newProduct: Product = {
-    id: generateId(),
-    name: formData.name,
-    description: formData.description,
-    price: formData.price,
-    amount: formData.amount,
-    model: formData.model,
-    event: formData.event,
-    pictureUrls: formData.pictureUrls.filter(url => url.trim()),
-    colors: formData.colors.filter(color => color.name.trim())
-  }
-
-  products.value.push(newProduct)
-  addStockHistory(newProduct.id, newProduct.name, 'in', newProduct.amount, 0, newProduct.amount, 'Initial stock')
-  closeModals()
-  resetForm()
-}
-
-const updateProduct = () => {
-  if (!selectedProduct.value) return
-
-  const index = products.value.findIndex(p => p.id === selectedProduct.value!.id)
-  if (index !== -1) {
-    const oldAmount = products.value[index].amount
-    const newAmount = formData.amount
-
-    products.value[index] = {
-      ...selectedProduct.value,
-      name: formData.name,
-      description: formData.description,
-      price: formData.price,
-      amount: newAmount,
-      model: formData.model,
-      event: formData.event,
-      pictureUrls: formData.pictureUrls.filter(url => url.trim()),
-      colors: formData.colors.filter(color => color.name.trim())
-    }
-
-    if (newAmount !== oldAmount) {
-      const type = newAmount > oldAmount ? 'in' : 'out'
-      const quantity = Math.abs(newAmount - oldAmount)
-      addStockHistory(
-          selectedProduct.value.id,
-          formData.name,
-          type,
-          quantity,
-          oldAmount,
-          newAmount,
-          'Stock adjustment'
-      )
-    }
-  }
-
-  closeModals()
 }
 
 const deleteProduct = () => {
@@ -212,6 +110,11 @@ const deleteProduct = () => {
   }
 
   closeModals()
+}
+
+const handleProductAdded = (newProduct: Product) => {
+  products.value.push(newProduct)
+  addStockHistory(newProduct.id, newProduct.name, 'in', newProduct.stock, 0, newProduct.stock, 'Initial stock')
 }
 
 // Stock Management
@@ -259,7 +162,6 @@ const addStockHistory = (
 }
 
 const loadStockHistory = () => {
-  // Simulate loading stock history
   stockHistory.value = [
     {
       id: '1',
@@ -303,22 +205,7 @@ const getStockStatus = (amount: number) => {
   return {status: 'In Stock', class: 'text-green-600 bg-green-50'}
 }
 
-// Form helpers
-const addColor = () => {
-  formData.colors.push({id: generateId(), name: ''})
-}
 
-const removeColor = (index: number) => {
-  formData.colors.splice(index, 1)
-}
-
-const addPictureUrl = () => {
-  formData.pictureUrls.push('')
-}
-
-const removePictureUrl = (index: number) => {
-  formData.pictureUrls.splice(index, 1)
-}
 
 //-------------
 const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
@@ -335,21 +222,20 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
             <p class="text-sm sm:text-base text-gray-600 hidden sm:block">Manage your furniture inventory</p>
           </div>
           <div>
-            <DialogGeneral :is-open="isDialogOpen('CreationDialog')">
+            <DialogGeneral class-name="h-[80%] flex items-center justify-center flex-col" title="Add new item" :is-open="isDialogOpen('CreationDialog')">
               <template #trigger>
                 <button
                     @click="setOpenDialog(true, {name: 'CreationDialog'})"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-6 rounded-lg font-medium transition-colors text-sm sm:text-base"
+                    class="bg-[#c9a275] hover:bg-[#dbb384] text-white px-3 py-2 sm:px-6 rounded-lg font-medium transition-colors text-sm sm:text-base"
                 >
-                  <span class="hidden sm:inline">Add Product</span>
+                  <span class="hidden sm:inline cursor-pointer">Add Product</span>
                   <span class="sm:hidden">Add</span>
                 </button>
               </template>
               <template #content>
-                <p>damn</p>
+                <CreateDialogContent @product-added="handleProductAdded" />
               </template>
             </DialogGeneral>
-
           </div>
         </div>
       </div>
@@ -650,332 +536,6 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
       </div>
     </div>
 
-    <!-- Mobile-Optimized Add Product Modal -->
-    <div v-if="isAddModalOpen"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50"
-         @click.self="closeModals">
-      <div
-          class="bg-white rounded-t-lg sm:rounded-lg shadow-xl w-full sm:max-w-2xl sm:mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-900">Add New Product</h3>
-          <button
-              @click="closeModals"
-              class="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <form @submit.prevent="addProduct" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                  v-model="formData.name"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
-              <input
-                  v-model="formData.model"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Event</label>
-              <select
-                  v-model="formData.event"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="none">None</option>
-                <option value="sale">Sale</option>
-                <option value="featured">Featured</option>
-                <option value="new">New</option>
-                <option value="bestseller">Bestseller</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
-              <input
-                  v-model="formData.price"
-                  type="number"
-                  step="0.01"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Initial Stock</label>
-              <input
-                  v-model="formData.amount"
-                  type="number"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                  v-model="formData.description"
-                  rows="3"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              ></textarea>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Picture URLs</label>
-            <div class="space-y-2">
-              <div v-for="(url, index) in formData.pictureUrls" :key="index" class="flex gap-2">
-                <input
-                    v-model="formData.pictureUrls[index]"
-                    type="text"
-                    placeholder="Image URL"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                <button
-                    v-if="formData.pictureUrls.length > 1"
-                    @click="removePictureUrl(index)"
-                    type="button"
-                    class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              <button
-                  @click="addPictureUrl"
-                  type="button"
-                  class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                + Add another image
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-            <div class="space-y-2">
-              <div v-for="(color, index) in formData.colors" :key="index" class="flex gap-2">
-                <input
-                    v-model="color.name"
-                    type="text"
-                    placeholder="Color name"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                <button
-                    v-if="formData.colors.length > 1"
-                    @click="removeColor(index)"
-                    type="button"
-                    class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              <button
-                  @click="addColor"
-                  type="button"
-                  class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                + Add another color
-              </button>
-            </div>
-          </div>
-
-          <div class="sticky bottom-0 bg-white pt-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-                @click="closeModals"
-                type="button"
-                class="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-                type="submit"
-                class="flex-1 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Add Product
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Mobile-Optimized Edit Product Modal -->
-    <div v-if="isEditModalOpen"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50"
-         @click.self="closeModals">
-      <div
-          class="bg-white rounded-t-lg sm:rounded-lg shadow-xl w-full sm:max-w-2xl sm:mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-900">Edit Product</h3>
-          <button
-              @click="closeModals"
-              class="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <form @submit.prevent="updateProduct" class="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                  v-model="formData.name"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
-              <input
-                  v-model="formData.model"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Event</label>
-              <select
-                  v-model="formData.event"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="none">None</option>
-                <option value="sale">Sale</option>
-                <option value="featured">Featured</option>
-                <option value="new">New</option>
-                <option value="bestseller">Bestseller</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
-              <input
-                  v-model="formData.price"
-                  type="number"
-                  step="0.01"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Stock</label>
-              <input
-                  v-model="formData.amount"
-                  type="number"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                  v-model="formData.description"
-                  rows="3"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              ></textarea>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Picture URLs</label>
-            <div class="space-y-2">
-              <div v-for="(url, index) in formData.pictureUrls" :key="index" class="flex gap-2">
-                <input
-                    v-model="formData.pictureUrls[index]"
-                    type="text"
-                    placeholder="Image URL"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                <button
-                    v-if="formData.pictureUrls.length > 1"
-                    @click="removePictureUrl(index)"
-                    type="button"
-                    class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              <button
-                  @click="addPictureUrl"
-                  type="button"
-                  class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                + Add another image
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-            <div class="space-y-2">
-              <div v-for="(color, index) in formData.colors" :key="index" class="flex gap-2">
-                <input
-                    v-model="color.name"
-                    type="text"
-                    placeholder="Color name"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                <button
-                    v-if="formData.colors.length > 1"
-                    @click="removeColor(index)"
-                    type="button"
-                    class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              <button
-                  @click="addColor"
-                  type="button"
-                  class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-              >
-                + Add another color
-              </button>
-            </div>
-          </div>
-
-          <div class="sticky bottom-0 bg-white pt-4 border-t border-gray-200 flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-                @click="closeModals"
-                type="button"
-                class="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-                type="submit"
-                class="flex-1 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Update Product
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
     <!-- Mobile-Optimized Delete Confirmation Modal -->
     <div v-if="isDeleteModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
          @click.self="closeModals">
@@ -1006,57 +566,3 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Custom scrollbar for modals */
-.overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Line clamp utility for text truncation */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Prevent scroll when modals are open */
-body.modal-open {
-  overflow: hidden;
-}
-
-/* Improve touch targets on mobile */
-@media (max-width: 768px) {
-  button, input, select, textarea {
-    min-height: 44px;
-  }
-
-  .touch-friendly {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Ensure proper spacing on very small screens */
-@media (max-width: 375px) {
-  .px-4 {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-</style>
