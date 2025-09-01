@@ -29,7 +29,7 @@ type ProductWithColorRow struct {
 	ProductID   uuid.UUID      `db:"product_id"`
 	Name        string         `db:"name"`
 	Description string         `db:"description"`
-	Amount      int            `db:"amount"`
+	Stock       int            `db:"stock"`
 	Price       float64        `db:"price"`
 	PictureUrls pq.StringArray `db:"picture_urls"`
 	Event       string         `db:"event"`
@@ -71,9 +71,15 @@ func uploadImageToBucket(header *multipart.FileHeader, ch chan<- string, file mu
 }
 
 func AddColorsToProduct(productId uuid.UUID, colors []models.Color) (models.Product, error) {
+	tx, err := db.DB.Beginx()
+	if err != nil {
+		return models.Product{}, errors.New("failed to start transaction: " + err.Error())
+	}
+	defer tx.Rollback()
+
 	var productToAddColors models.Product
 
-	err := db.DB.Get(&productToAddColors, "SELECT * FROM products WHERE id = $1", productId)
+	err = tx.Get(&productToAddColors, "SELECT * FROM products WHERE id = $1", productId)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Product{}, errors.New("product not found")
@@ -81,17 +87,23 @@ func AddColorsToProduct(productId uuid.UUID, colors []models.Color) (models.Prod
 		return models.Product{}, err
 	}
 
+	processedColors, err := ProcessColors(tx, colors)
+
 	var placeHolders []string
 	var values []interface{}
 
-	for i, color := range colors {
+	for i, color := range processedColors {
 		placeHolders = append(placeHolders, fmt.Sprintf("($1, $%d)", i+2))
 		values = append(values, color.ID)
 	}
 
 	values = append([]interface{}{productId}, values...)
 	query := fmt.Sprintf("INSERT INTO product_colors (product_id, color_id) VALUES %s ON CONFLICT DO NOTHING", strings.Join(placeHolders, ","))
-	_, err = db.DB.Exec(query, values...)
+	_, err = tx.Exec(query, values...)
+
+	if err := tx.Commit(); err != nil {
+		return models.Product{}, errors.New("failed to commit transaction: " + err.Error())
+	}
 
 	productWithColors, err := GetProductsWithColors(productToAddColors)
 
@@ -102,12 +114,34 @@ func AddColorsToProduct(productId uuid.UUID, colors []models.Color) (models.Prod
 	return productWithColors, nil
 }
 
+func ProcessColors(tx *sqlx.Tx, colors []models.Color) ([]models.Color, error) {
+	var processedColors []models.Color
+
+	for _, color := range colors {
+		var newId uuid.UUID
+
+		if color.ID == uuid.Nil {
+			err := tx.Get(&newId, "INSERT INTO colors (name) VALUES ($1) RETURNING id", color.Name)
+
+			if err != nil {
+				return []models.Color{}, errors.New("failed to insert color: " + err.Error())
+			}
+
+			color.ID = newId
+		}
+
+		processedColors = append(processedColors, color)
+	}
+
+	return processedColors, nil
+}
+
 func GetProductsWithColors(product models.Product) (models.Product, error) {
 	var rows []ProductWithColorRow
 
 	err := db.DB.Select(&rows, `
 		SELECT 
-			p.id AS product_id, p.name, p.description, p.amount, p.price, p.picture_urls, p.event, p.model,
+			p.id AS product_id, p.name, p.description, p.stock, p.price, p.picture_urls, p.event, p.model,
 			c.id AS color_id, c.name AS color_name
 		FROM products p
 		JOIN product_colors pc ON p.id = pc.product_id
@@ -172,7 +206,7 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	amount, err := strconv.Atoi(r.FormValue("amount"))
+	stock, err := strconv.Atoi(r.FormValue("stock"))
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -233,7 +267,7 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		pictureURLs = append(pictureURLs, pictureURL)
 	}
 
-	if price <= 0 || amount <= 0 {
+	if price <= 0 || stock <= 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Price AND/OR amount must be greater than zero",
@@ -258,11 +292,11 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = db.DB.QueryRow(`
-				INSERT INTO products (name, amount, price, picture_urls, description, event, model)
+				INSERT INTO products (name, stock, price, picture_urls, description, event, model)
 				VALUES ($1, $2, $3, $4, $5, $6, $7)
 				RETURNING id`,
 		name,
-		amount,
+		stock,
 		price,
 		pq.StringArray(pictureURLs),
 		description,
@@ -462,7 +496,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var product models.Product
 		var pictureUrls pq.StringArray
-		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
+		err = rows.Scan(&product.ID, &product.Name, &product.Stock, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
 		product.PictureUrls = pictureUrls
 		product, err = GetProductsWithColors(product)
 
@@ -566,7 +600,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		params["price"] = price
 		product.Price = price
 	}
-	if amountStr := r.FormValue("amount"); amountStr != "" {
+	if amountStr := r.FormValue("stock"); amountStr != "" {
 		amount, err := strconv.Atoi(amountStr)
 
 		if err != nil {
@@ -577,9 +611,9 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updates = append(updates, "amount = :amount")
-		params["amount"] = amount
-		product.Amount = amount
+		updates = append(updates, "stock = :stock")
+		params["stock"] = amount
+		product.Stock = amount
 	}
 	if files := r.MultipartForm.File["pictures"]; files != nil {
 		for _, fileHeader := range files {
