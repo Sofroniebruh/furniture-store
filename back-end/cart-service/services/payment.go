@@ -243,9 +243,10 @@ func addToHistory(userID, orderID uuid.UUID, cfg *config.Config) error {
 }
 
 func callAddToHistory(userID, productID uuid.UUID, cfg *config.Config) error {
-	url := fmt.Sprintf("%s/user/history", cfg.UserRelatedServiceURL)
+	url := fmt.Sprintf("%s/internal/user/history", cfg.UserRelatedServiceURL)
 	
 	payload := map[string]string{
+		"user_id":    userID.String(),
 		"product_id": productID.String(),
 	}
 	

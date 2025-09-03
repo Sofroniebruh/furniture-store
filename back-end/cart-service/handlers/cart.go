@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"cart-service/config"
@@ -34,6 +35,7 @@ func AddToCart(c *gin.Context) {
 
 	err := services.AddToCart(userID, req.ProductID, req.Quantity)
 	if err != nil {
+		log.Printf("AddToCart error: %v", err)
 		if err.Error() == "product not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -42,7 +44,7 @@ func AddToCart(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add item to cart"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

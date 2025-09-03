@@ -19,7 +19,7 @@ func GetCart(userID uuid.UUID) (*models.Cart, error) {
 	query := `
 		SELECT 
 			ci.id, ci.user_id, ci.product_id, ci.quantity, ci.created_at, ci.updated_at,
-			p.name, p.description, p.stock, p.price, p.event, p.model
+			p.name, p.description, p.stock, p.price, p.picture_urls, p.event, p.model
 		FROM cart_items ci
 		JOIN products p ON ci.product_id = p.id
 		WHERE ci.user_id = $1
@@ -41,7 +41,7 @@ func GetCart(userID uuid.UUID) (*models.Cart, error) {
 
 		err := rows.Scan(
 			&item.ID, &item.UserID, &item.ProductID, &item.Quantity, &item.CreatedAt, &item.UpdatedAt,
-			&product.Name, &product.Description, &product.Stock, &product.Price, &product.Event, &product.Model,
+			&product.Name, &product.Description, &product.Stock, &product.Price, &product.PictureUrls, &product.Event, &product.Model,
 		)
 		if err != nil {
 			return nil, err
