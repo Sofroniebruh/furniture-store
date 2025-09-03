@@ -206,7 +206,12 @@ export const useCartStore = defineStore('cart', () => {
         throw new Error(errorData.error || 'Failed to clear cart')
       }
 
-      cart.value = null
+      cart.value = {
+        user_id: cart.value?.user_id || '',
+        items: [],
+        total_items: 0,
+        total_price: 0
+      }
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to clear cart'

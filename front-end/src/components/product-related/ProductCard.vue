@@ -18,8 +18,6 @@ const props = defineProps({
 })
 const className = props.class
 const product = props.product
-
-console.log(product)
 </script>
 
 <template>
