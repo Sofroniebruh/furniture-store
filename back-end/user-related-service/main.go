@@ -33,6 +33,9 @@ func main() {
 	r.Post("/user/wishlist", middleware.Protected(http.HandlerFunc(services.AddToWishListOrHistory)))
 	r.Post("/user/history", middleware.Protected(http.HandlerFunc(services.AddToWishListOrHistory)))
 	r.Delete("/user/wishlist", middleware.Protected(http.HandlerFunc(services.RemoveFromWishList)))
+	
+	// Internal service-to-service endpoints (no authentication required)
+	r.Post("/internal/user/history", services.AddToHistoryInternal)
 
 	log.Println("Listening on port 8080")
 	err = http.ListenAndServe(":8080", handler)

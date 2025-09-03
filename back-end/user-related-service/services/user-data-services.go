@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 	"user-related-service/config"
 	"user-related-service/db"
 	"user-related-service/models"
@@ -31,7 +32,7 @@ type ProductWithColorRow struct {
 	ProductID   uuid.UUID      `db:"product_id"`
 	Name        string         `db:"name"`
 	Description string         `db:"description"`
-	Amount      int            `db:"amount"`
+	Stock       int            `db:"stock"`
 	Price       float64        `db:"price"`
 	PictureUrls pq.StringArray `db:"picture_urls"`
 	Event       string         `db:"event"`
@@ -45,7 +46,7 @@ func GetProductsWithColors(product models.Product) (models.Product, error) {
 
 	err := db.DB.Select(&rows, `
 		SELECT 
-			p.id AS product_id, p.name, p.description, p.amount, p.price, p.picture_urls, p.event, p.model,
+			p.id AS product_id, p.name, p.description, p.stock, p.price, p.picture_urls, p.event, p.model,
 			c.id AS color_id, c.name AS color_name
 		FROM products p
 		JOIN product_colors pc ON p.id = pc.product_id
@@ -132,8 +133,8 @@ func AddToWishListOrHistory(w http.ResponseWriter, r *http.Request) {
 				`
 	case "/user/history":
 		query = `
-				INSERT INTO histories (user_id, product_id) 
-				VALUES ($1, $2)
+				INSERT INTO histories (user_id, product_id, created_at) 
+				VALUES ($1, $2, $3)
 				`
 	default:
 		w.WriteHeader(http.StatusBadRequest)
@@ -143,7 +144,7 @@ func AddToWishListOrHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.DB.Exec(query, userId, product.ID)
+	_, err = db.DB.Exec(query, userId, product.ID, time.Now())
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -280,7 +281,7 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 		var product models.Product
 		var pictureUrls pq.StringArray
 
-		err = rows.Scan(&product.ID, &product.Name, &product.Amount, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
+		err = rows.Scan(&product.ID, &product.Name, &product.Stock, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
 
 		if err != nil {
 			log.Println(err)
@@ -312,5 +313,86 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"products": products,
 		"total":    totalPages,
+	})
+}
+
+// AddToHistoryInternal is a service-to-service endpoint for adding items to user history
+// This endpoint bypasses authentication and is intended for internal service calls only
+func AddToHistoryInternal(w http.ResponseWriter, r *http.Request) {
+	var requestBody struct {
+		UserID    string `json:"user_id"`
+		ProductID string `json:"product_id"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	if requestBody.UserID == "" || requestBody.ProductID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "user_id and product_id are required",
+		})
+		return
+	}
+
+	// Parse UUIDs
+	userID, err := uuid.Parse(requestBody.UserID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid user_id format",
+		})
+		return
+	}
+
+	productUUID, err := uuid.Parse(requestBody.ProductID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid product_id format",
+		})
+		return
+	}
+
+	// Verify product exists
+	var productExists bool
+	err = db.DB.Get(&productExists, "SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)", productUUID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to verify product",
+		})
+		return
+	}
+
+	if !productExists {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Product not found",
+		})
+		return
+	}
+
+	// Insert into history (update created_at if already exists to move to top of history)
+	query := `INSERT INTO histories (user_id, product_id, created_at) VALUES ($1, $2, NOW()) 
+			   ON CONFLICT (user_id, product_id) DO UPDATE SET created_at = NOW()`
+	_, err = db.DB.Exec(query, userID, productUUID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to add to history",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "Successfully added to history",
 	})
 }

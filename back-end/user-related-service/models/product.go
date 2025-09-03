@@ -9,7 +9,7 @@ type Product struct {
 	ID          uuid.UUID      `json:"id" db:"id"`
 	Name        string         `json:"name" db:"name"`
 	Description string         `json:"description" db:"description"`
-	Amount      int            `json:"amount" db:"amount"`
+	Stock       int            `json:"stock" db:"stock"`
 	Price       float64        `json:"price" db:"price"`
 	PictureUrls pq.StringArray `json:"pictureUrls" db:"picture_urls"`
 	Event       string         `json:"event" db:"event"`
