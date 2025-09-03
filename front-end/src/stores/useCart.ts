@@ -7,6 +7,7 @@ export interface CartProduct {
   description: string
   stock: number
   price: number
+  pictureUrls: string[]
   event: string
   model: string
 }
@@ -88,7 +89,6 @@ export const useCartStore = defineStore('cart', () => {
       error.value = err instanceof Error ? err.message : 'Failed to fetch cart'
       console.error('Error fetching cart:', err)
       
-      // Initialize empty cart on error to prevent undefined issues
       cart.value = {
         user_id: '',
         items: [],
@@ -104,6 +104,7 @@ export const useCartStore = defineStore('cart', () => {
     error.value = ''
 
     try {
+      console.log('Adding to cart:', { product_id: productId, quantity })
       const response = await fetch(`${import.meta.env.VITE_CART_SERVICE_URL}/cart/items`, {
         method: 'POST',
         credentials: 'include',
@@ -116,12 +117,14 @@ export const useCartStore = defineStore('cart', () => {
         }),
       })
 
+      console.log('Add to cart response status:', response.status)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Add to cart error response:', errorData)
         throw new Error(errorData.error || 'Failed to add to cart')
       }
 
-      // Refresh cart after adding item
       await fetchCart()
       return { success: true }
     } catch (err) {
@@ -151,7 +154,6 @@ export const useCartStore = defineStore('cart', () => {
         throw new Error(errorData.error || 'Failed to update cart item')
       }
 
-      // Refresh cart after updating item
       await fetchCart()
       return { success: true }
     } catch (err) {
@@ -178,7 +180,6 @@ export const useCartStore = defineStore('cart', () => {
         throw new Error(errorData.error || 'Failed to remove from cart')
       }
 
-      // Refresh cart after removing item
       await fetchCart()
       return { success: true }
     } catch (err) {
@@ -205,7 +206,6 @@ export const useCartStore = defineStore('cart', () => {
         throw new Error(errorData.error || 'Failed to clear cart')
       }
 
-      // Clear local cart state
       cart.value = null
       return { success: true }
     } catch (err) {

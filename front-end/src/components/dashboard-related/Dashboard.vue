@@ -29,13 +29,11 @@ const stockHistory = ref<Array<{
   date: Date
 }>>([])
 
-// Initialize data
 onMounted(() => {
   products.value = [...productsData]
   loadStockHistory()
 })
 
-// Computed properties
 const filteredProducts = computed(() => {
   let filtered = products.value.filter(product =>
       product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -43,7 +41,6 @@ const filteredProducts = computed(() => {
       product.model.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 
-  // Sorting
   filtered.sort((a, b) => {
     let aValue = a[sortBy.value as keyof Product]
     let bValue = b[sortBy.value as keyof Product]
@@ -81,7 +78,6 @@ const dashboardStats = computed(() => ({
   totalValue: products.value.reduce((sum, product) => sum + (product.price * product.amount), 0)
 }))
 
-// CRUD Operations
 const openEditModal = (product: Product) => {
   selectedProduct.value = product
   isEditModalOpen.value = true

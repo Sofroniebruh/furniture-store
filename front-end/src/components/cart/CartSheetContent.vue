@@ -26,7 +26,7 @@ const router = useRouter()
 
 const handleCheckout = async () => {
   const result = await proceedToCheckout()
-  if (result.success) {
+  if (result.success && 'data' in result) {
     router.push({
       name: 'checkout',
       query: {
@@ -90,7 +90,7 @@ onMounted(() => {
         <div
           v-for="item in cartItems"
           :key="item.id"
-          class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg"
+          class="flex items-center space-x-3 p-3"
         >
           <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
             <div class="text-xs text-gray-400">IMG</div>
@@ -143,14 +143,14 @@ onMounted(() => {
         <div class="space-y-2">
           <router-link
             to="/cart"
-            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-4 rounded-lg text-center block transition-colors font-medium"
+            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-4 rounded-md text-center block transition-colors font-medium"
             @click="$emit('close')"
           >
             View Cart
           </router-link>
           <button
             @click="handleCheckout"
-            class="w-full bg-[#c9a275] hover:bg-[#b8956a] text-white py-3 px-4 rounded-lg transition-colors font-medium"
+            class="w-full bg-[#c9a275] hover:bg-[#b8956a] text-white py-3 px-4 rounded-md transition-colors font-medium"
             :disabled="cartItemsCount === 0"
           >
             Checkout

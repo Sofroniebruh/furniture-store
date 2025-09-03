@@ -4,10 +4,6 @@ import { ShoppingCart, X } from 'lucide-vue-next'
 import { useCart } from '@/composables/useCart'
 import { useRouter } from 'vue-router'
 
-defineEmits<{
-  close: []
-}>()
-
 const {
   cartItems,
   cartItemsCount,
@@ -23,9 +19,14 @@ const {
 
 const router = useRouter()
 
+const emit = defineEmits<{
+  close: []
+}>()
+
 const handleCheckout = async () => {
   const result = await proceedToCheckout()
-  if (result.success) {
+  if (result.success && 'data' in result) {
+    emit('close')
     router.push({
       name: 'checkout',
       query: {
@@ -43,7 +44,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full bg-white border border-gray-200 rounded-lg">
+  <div class="w-full bg-white">
     <div class="p-4">
       <h3 class="text-lg font-semibold mb-3">Shopping Cart</h3>
       
@@ -114,14 +115,14 @@ onMounted(() => {
           <div class="space-y-2">
             <router-link
               to="/cart"
-              class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded text-center block transition-colors"
+              class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-md text-center block transition-colors"
               @click="$emit('close')"
             >
               View Cart
             </router-link>
             <button
               @click="handleCheckout"
-              class="w-full bg-[#c9a275] hover:bg-[#b8956a] text-white py-2 px-4 rounded transition-colors"
+              class="w-full bg-[#c9a275] hover:bg-[#b8956a] text-white py-2 px-4 rounded-md transition-colors cursor-pointer"
             >
               Checkout
             </button>

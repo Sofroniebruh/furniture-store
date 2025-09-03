@@ -1,15 +1,12 @@
 <template>
   <Wrapper class="py-8">
     <div class="max-w-2xl mx-auto text-center">
-      <!-- Loading state -->
       <div v-if="isLoading" class="py-16">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
         <p class="mt-4">Loading order details...</p>
       </div>
       
-      <!-- Success state -->
       <div v-else-if="order" class="space-y-8">
-        <!-- Success message -->
         <div class="text-center">
           <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle class="w-8 h-8 text-green-600" />
@@ -18,7 +15,6 @@
           <p class="text-gray-600">Thank you for your purchase. Your order has been confirmed.</p>
         </div>
         
-        <!-- Order details -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 text-left">
           <h2 class="text-xl font-semibold mb-4">Order Details</h2>
           
@@ -46,7 +42,6 @@
             </div>
           </div>
           
-          <!-- Order items -->
           <div v-if="order.items && order.items.length > 0" class="mt-6">
             <h3 class="font-medium mb-3">Items Purchased:</h3>
             <div class="space-y-3">
@@ -69,7 +64,6 @@
           </div>
         </div>
         
-        <!-- Next steps -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-blue-800 mb-2">What's Next?</h3>
           <ul class="text-blue-700 space-y-1 text-left">
@@ -80,7 +74,6 @@
           </ul>
         </div>
         
-        <!-- Action buttons -->
         <div class="space-y-4">
           <router-link
             to="/dashboard/history"
@@ -100,7 +93,6 @@
         </div>
       </div>
       
-      <!-- Error state -->
       <div v-else class="py-16">
         <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <X class="w-8 h-8 text-red-600" />
@@ -161,7 +153,6 @@ const loadOrderDetails = async () => {
     const orderData = await cartStore.getOrder(orderId.value)
     if (orderData) {
       order.value = orderData
-      // Refresh cart (should be empty after successful payment)
       await loadCart()
     }
   } catch (err) {

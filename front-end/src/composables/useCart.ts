@@ -14,6 +14,14 @@ export const useCart = () => {
   const isLoading = computed(() => cartStore.isLoading)
   const error = computed(() => cartStore.error)
 
+  const shippingCost = computed(() => {
+    return cartTotal.value >= 100 ? 0 : 9.99
+  })
+
+  const finalTotal = computed(() => {
+    return cartTotal.value + shippingCost.value
+  })
+
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -122,29 +130,24 @@ export const useCart = () => {
   }
 
   return {
-    // State
     cartItems,
     cartItemsCount,
     cartTotal,
+    shippingCost,
+    finalTotal,
     isLoading,
     error,
     isAuthenticated,
-
-    // Actions
     addToCart,
     updateQuantity,
     removeItem,
     clearCart,
     loadCart,
     proceedToCheckout,
-
-    // Utilities
     formatCurrency,
     getItemQuantity,
     isItemInCart,
     getCartItemTotal,
-
-    // Store access
     cartStore,
   }
 }

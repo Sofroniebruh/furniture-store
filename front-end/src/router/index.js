@@ -91,7 +91,6 @@ export const router = createRouter({
 router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
 
-    // Only fetch user if not already authenticated or if navigating to protected routes
     if (!authStore.isAuthenticated && (to.meta.requiresAuth || to.meta.roles)) {
         try {
             await authStore.fetchUser()

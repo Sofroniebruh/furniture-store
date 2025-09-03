@@ -23,7 +23,6 @@ const route = useRoute()
 const {updateProductName} = useParams()
 const {loadCart} = useCart()
 
-// Watch for authentication changes and load cart
 watch(() => auth.isAuthenticated, (isAuthenticated) => {
   if (isAuthenticated) {
     loadCart()

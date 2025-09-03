@@ -51,28 +51,27 @@
         <div class="bg-white border border-gray-200 rounded-lg p-6">
           <h2 class="text-xl font-semibold mb-4">Payment Information</h2>
           
+          <!-- Stripe Elements will be mounted here -->
+          <div id="payment-element" class="mb-6"></div>
+          
           <div v-if="!stripeLoaded" class="text-center py-8">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
             <p class="mt-2">Loading payment form...</p>
           </div>
-          
-          <div v-else>
-            <!-- Stripe Elements will be mounted here -->
-            <div id="payment-element" class="mb-6"></div>
             
-            <div v-if="paymentError" class="text-red-600 text-sm mb-4">
-              {{ paymentError }}
-            </div>
-            
-            <button
-              @click="handleSubmit"
-              :disabled="isProcessing || !paymentElement"
-              class="w-full bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
-            >
-              <span v-if="isProcessing">Processing...</span>
-              <span v-else>Complete Payment</span>
-            </button>
+          <div v-if="paymentError" class="text-red-600 text-sm mb-4">
+            {{ paymentError }}
           </div>
+          
+          <button
+            @click="handleSubmit"
+            :disabled="isProcessing || !paymentElement || !stripeLoaded"
+            class="w-full bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
+          >
+            <span v-if="isProcessing">Processing...</span>
+            <span v-else-if="!stripeLoaded">Loading...</span>
+            <span v-else>Complete Payment</span>
+          </button>
         </div>
       </div>
     </div>
@@ -80,13 +79,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Wrapper from '@/components/Wrapper.vue'
 import { useCartStore, type Order } from '@/stores/useCart'
 import { toast } from 'vue-sonner'
 
-// Stripe types
 declare global {
   interface Window {
     Stripe: any
@@ -119,7 +117,6 @@ const formatCurrency = (amount: number): string => {
 
 const loadStripe = async () => {
   try {
-    // Load Stripe.js
     if (!window.Stripe) {
       const script = document.createElement('script')
       script.src = 'https://js.stripe.com/v3/'
@@ -134,6 +131,34 @@ const loadStripe = async () => {
   }
 }
 
+const waitForElement = (selector: string, timeout = 5000): Promise<Element> => {
+  return new Promise((resolve, reject) => {
+    const element = document.querySelector(selector)
+    if (element) {
+      resolve(element)
+      return
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector(selector)
+      if (element) {
+        observer.disconnect()
+        resolve(element)
+      }
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    setTimeout(() => {
+      observer.disconnect()
+      reject(new Error(`Element ${selector} not found within ${timeout}ms`))
+    }, timeout)
+  })
+}
+
 const initializeStripe = async () => {
   try {
     if (!clientSecret.value) {
@@ -141,14 +166,12 @@ const initializeStripe = async () => {
       return
     }
 
-    // Initialize Stripe
     stripe.value = window.Stripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
     
     if (!stripe.value) {
       throw new Error('Failed to initialize Stripe')
     }
 
-    // Create Elements instance
     elements.value = stripe.value.elements({
       clientSecret: clientSecret.value,
       appearance: {
@@ -159,9 +182,17 @@ const initializeStripe = async () => {
       }
     })
 
-    // Create and mount Payment Element
+    await waitForElement('#payment-element')
+
     paymentElement.value = elements.value.create('payment')
-    paymentElement.value.mount('#payment-element')
+    
+    try {
+      paymentElement.value.mount('#payment-element')
+    } catch (mountError) {
+      console.error('Mount error:', mountError)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      paymentElement.value.mount('#payment-element')
+    }
 
     paymentElement.value.on('ready', () => {
       stripeLoaded.value = true
@@ -206,7 +237,6 @@ const handleSubmit = async () => {
     if (confirmError) {
       paymentError.value = confirmError.message
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      // Payment succeeded, redirect to success page
       toast('Payment successful!')
       router.push({
         name: 'checkout-success',

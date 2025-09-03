@@ -1,3 +1,51 @@
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ShoppingCart, X } from 'lucide-vue-next'
+import Wrapper from '@/components/Wrapper.vue'
+import { useCart } from '@/composables/useCart'
+
+const {
+  cartItems,
+  cartItemsCount,
+  cartTotal,
+  finalTotal,
+  isLoading,
+  formatCurrency,
+  updateQuantity,
+  removeItem,
+  clearCart,
+  loadCart,
+  proceedToCheckout,
+  getCartItemTotal
+} = useCart()
+
+const router = useRouter()
+
+const handleClearCart = async () => {
+  if (confirm('Are you sure you want to clear your cart?')) {
+    await clearCart()
+  }
+}
+
+const handleCheckout = async () => {
+  const result = await proceedToCheckout()
+  if (result.success && 'data' in result) {
+    router.push({
+      name: 'checkout',
+      query: {
+        client_secret: result.data.client_secret,
+        order_id: result.data.order_id,
+      }
+    })
+  }
+}
+
+onMounted(() => {
+  loadCart()
+})
+</script>
+
 <template>
   <Wrapper class="py-8">
     <div class="max-w-4xl mx-auto">
@@ -27,8 +75,14 @@
             class="bg-white border border-gray-200 rounded-lg p-6"
           >
             <div class="flex items-start space-x-4">
-              <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
-                <div class="text-gray-400 text-sm">No image</div>
+              <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  v-if="item.product?.pictureUrls && item.product.pictureUrls.length > 0"
+                  :src="item.product.pictureUrls[0]" 
+                  :alt="item.product.name"
+                  class="w-full h-full object-cover"
+                />
+                <div v-else class="text-gray-400 text-sm">No image</div>
               </div>
               
               <div class="flex-1">
@@ -101,13 +155,14 @@
               
               <div class="flex justify-between">
                 <span>Shipping</span>
-                <span class="text-green-600">Free</span>
+                <span v-if="cartTotal >= 100" class="text-green-600">Free</span>
+                <span v-else>{{ formatCurrency(9.99) }}</span>
               </div>
               
               <div class="border-t pt-3">
                 <div class="flex justify-between items-center text-lg font-semibold">
                   <span>Total</span>
-                  <span>{{ formatCurrency(cartTotal) }}</span>
+                  <span>{{ formatCurrency(finalTotal) }}</span>
                 </div>
               </div>
             </div>
@@ -115,7 +170,7 @@
             <button
               @click="handleCheckout"
               :disabled="cartItemsCount === 0"
-              class="w-full mt-6 bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
+              class="w-full mt-6 bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
             >
               Proceed to Checkout
             </button>
@@ -132,50 +187,3 @@
     </div>
   </Wrapper>
 </template>
-
-<script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ShoppingCart, X } from 'lucide-vue-next'
-import Wrapper from '@/components/Wrapper.vue'
-import { useCart } from '@/composables/useCart'
-
-const { 
-  cartItems, 
-  cartItemsCount, 
-  cartTotal, 
-  isLoading,
-  formatCurrency, 
-  updateQuantity, 
-  removeItem,
-  clearCart,
-  loadCart,
-  proceedToCheckout,
-  getCartItemTotal
-} = useCart()
-
-const router = useRouter()
-
-const handleClearCart = async () => {
-  if (confirm('Are you sure you want to clear your cart?')) {
-    await clearCart()
-  }
-}
-
-const handleCheckout = async () => {
-  const result = await proceedToCheckout()
-  if (result.success) {
-    router.push({
-      name: 'checkout',
-      query: {
-        client_secret: result.data.client_secret,
-        order_id: result.data.order_id,
-      }
-    })
-  }
-}
-
-onMounted(() => {
-  loadCart()
-})
-</script>
