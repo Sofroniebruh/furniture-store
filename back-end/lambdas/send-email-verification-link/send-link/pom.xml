@@ -81,7 +81,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.api_gateway_to_ses_handler.ApiGatewayToSnsHandler</mainClass>
+                                    <mainClass>org.example.ApiGatewayToSesHandler</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

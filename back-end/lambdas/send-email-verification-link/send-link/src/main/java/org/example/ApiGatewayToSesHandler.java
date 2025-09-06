@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.*;
-
 import java.util.Map;
 
 public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent>
@@ -19,6 +18,12 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
 
     public boolean sendEmail(String receiverEmail, String subject, String emailBody)
     {
+        System.out.println("I am here");
+        System.out.println("Email body: " + emailBody);
+        
+        if (subject == null) subject = "";
+        if (emailBody == null) emailBody = "";
+        
         try
         {
             Destination destination = Destination.builder()
@@ -69,23 +74,40 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
     {
         try
         {
+            System.out.println("Raw request body: " + request.getBody());
+            System.out.println("Request headers: " + request.getHeaders());
+            
             EmailPOJO emailPOJO = objectMapper.readValue(request.getBody(), EmailPOJO.class);
             String receiverEmail = emailPOJO.getEmail();
             String body = emailPOJO.getMessageBody();
             String emailBody;
             String subject = emailPOJO.getSubject();
 
-            if (subject.equalsIgnoreCase("verify your email"))
+            System.out.println("Your email POJO: " + emailPOJO);
+            System.out.println("Your email body: " + body);
+            
+            if (receiverEmail == null || receiverEmail.trim().isEmpty()) {
+                throw new CustomException("Receiver email is required");
+            }
+            if (subject == null || subject.trim().isEmpty()) {
+                throw new CustomException("Subject is required");
+            }
+
+            System.out.println("Subject for comparison: '" + subject + "'");
+            
+            if (subject.toLowerCase().contains("verify"))
             {
+                if (body == null) body = "";
                 emailBody = "Your verification code: " + body + ". The code is valid for 2 minutes.";
             }
-            else if (subject.equalsIgnoreCase("reset your password"))
+            else if (subject.toLowerCase().contains("reset") || subject.toLowerCase().contains("password"))
             {
+                if (body == null) body = "";
                 emailBody = "Please go to the following url to reset your password: " + body;
             }
             else
             {
-                emailBody = body;
+                emailBody = body != null ? body : "";
             }
 
             if (!sendEmail(receiverEmail, subject, emailBody)) throw new CustomException("Something went wrong");
