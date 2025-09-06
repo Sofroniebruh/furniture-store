@@ -77,7 +77,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
 
             if (subject.equalsIgnoreCase("verify your email"))
             {
-                emailBody = "Your verification code: " + body;
+                emailBody = "Your verification code: " + body + ". The code is valid for 2 minutes.";
             }
             else if (subject.equalsIgnoreCase("reset your password"))
             {
