@@ -316,8 +316,6 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// AddToHistoryInternal is a service-to-service endpoint for adding items to user history
-// This endpoint bypasses authentication and is intended for internal service calls only
 func AddToHistoryInternal(w http.ResponseWriter, r *http.Request) {
 	var requestBody struct {
 		UserID    string `json:"user_id"`
@@ -341,7 +339,6 @@ func AddToHistoryInternal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse UUIDs
 	userID, err := uuid.Parse(requestBody.UserID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -360,7 +357,6 @@ func AddToHistoryInternal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify product exists
 	var productExists bool
 	err = db.DB.Get(&productExists, "SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)", productUUID)
 	if err != nil {
@@ -379,7 +375,6 @@ func AddToHistoryInternal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert into history (update created_at if already exists to move to top of history)
 	query := `INSERT INTO histories (user_id, product_id, created_at) VALUES ($1, $2, NOW()) 
 			   ON CONFLICT (user_id, product_id) DO UPDATE SET created_at = NOW()`
 	_, err = db.DB.Exec(query, userID, productUUID)
