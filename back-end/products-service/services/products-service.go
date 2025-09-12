@@ -154,7 +154,7 @@ func GetProductsWithColors(product models.Product) (models.Product, error) {
 	}
 
 	if len(rows) == 0 {
-		return models.Product{}, sql.ErrNoRows
+		return product, nil
 	}
 
 	for _, row := range rows {
@@ -180,13 +180,38 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	name := r.FormValue("name")
-	description := r.FormValue("description")
-	event := r.FormValue("event")
-	model := r.FormValue("model")
-	price, err := strconv.ParseFloat(r.FormValue("price"), 64)
+	productStr := r.FormValue("product")
 
+	var productData struct {
+		Name        string         `json:"name"`
+		Description string         `json:"description"`
+		Price       string         `json:"price"`
+		Stock       int            `json:"stock"`
+		Model       string         `json:"model"`
+		Event       string         `json:"event"`
+		Colors      []models.Color `json:"colors"`
+	}
+
+	err = json.Unmarshal([]byte(productStr), &productData)
 	if err != nil {
+		log.Printf("Failed to parse product JSON: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to parse product data",
+		})
+		return
+	}
+
+	name := productData.Name
+	description := productData.Description
+	event := productData.Event
+	model := productData.Model
+	stock := productData.Stock
+	colors := productData.Colors
+
+	price, err := strconv.ParseFloat(productData.Price, 64)
+	if err != nil {
+		log.Printf("Failed to parse price: %s, error: %v", productData.Price, err)
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Failed to parse price",
@@ -194,29 +219,8 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	colorsStr := r.FormValue("colors")
-	var colors []models.Color
-	err = json.Unmarshal([]byte(colorsStr), &colors)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to parse colors",
-		})
-		return
-	}
-
-	stock, err := strconv.Atoi(r.FormValue("stock"))
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"error": "Failed to parse amount",
-		})
-		return
-	}
-
 	files := r.MultipartForm.File["pictures"]
+	log.Printf("Uploaded product files: %v", files)
 
 	s3ch := make(chan string, len(files))
 
@@ -283,12 +287,16 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if model == "" || event == "" {
+	if model == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": "Model and Event cannot be empty",
 		})
 		return
+	}
+
+	if event == "" {
+		event = "none"
 	}
 
 	err = db.DB.QueryRow(`
@@ -311,6 +319,11 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = AddStockHistoryEntry(product.ID, models.StockHistoryTypeIn, stock, 0, stock, "Initial stock")
+	if err != nil {
+		log.Printf("Failed to create initial stock history entry: %v", err)
+	}
+
 	productWithColors, err := AddColorsToProduct(product.ID, colors)
 
 	if err != nil {
@@ -321,8 +334,6 @@ func AddProduct(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	productWithColors.Price = float64(price)
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]models.Product{
@@ -426,8 +437,8 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	limit, err := strconv.Atoi(limitStr)
 
-	if err != nil || limit < 12 {
-		limit = 2
+	if err != nil || limit < 16 {
+		limit = 16
 	}
 
 	countQuery := "SELECT COUNT(*) FROM products"
@@ -448,13 +459,21 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	err = statement.Get(&totalCount, params)
 
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": "Failed to get product count",
+		})
+		return
+	}
+
 	totalPages := int(math.Ceil(float64(totalCount) / float64(limit)))
 
 	offset := (page - 1) * limit
 	params["limit"] = limit
 	params["offset"] = offset
 	var products []models.Product
-	query := "SELECT * FROM products"
+	query := "SELECT id, name, stock, price, picture_urls, description, event, model FROM products"
 
 	if len(filters) > 0 {
 		query += " WHERE " + strings.Join(filters, " AND ")
@@ -496,20 +515,22 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var product models.Product
 		var pictureUrls pq.StringArray
-		err = rows.Scan(&product.ID, &product.Name, &product.Stock, &product.Price, &product.Description, &pictureUrls, &product.Event, &product.Model)
-		product.PictureUrls = pictureUrls
-		product, err = GetProductsWithColors(product)
+		err = rows.Scan(&product.ID, &product.Name, &product.Stock, &product.Price, &pictureUrls, &product.Description, &product.Event, &product.Model)
 
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]string{
-				"error": "Internal Server Error",
+				"error": "Failed to scan product data",
 			})
 			return
 		}
 
+		product.PictureUrls = pictureUrls
+		product, err = GetProductsWithColors(product)
+
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]string{
 				"error": "Internal Server Error",
@@ -611,9 +632,30 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updates = append(updates, "stock = :stock")
-		params["stock"] = amount
-		product.Stock = amount
+		previousStock := product.Stock
+		if amount != previousStock {
+			updates = append(updates, "stock = :stock")
+			params["stock"] = amount
+			
+			var historyType models.StockHistoryType
+			var reason string
+			quantity := amount - previousStock
+			
+			if quantity > 0 {
+				historyType = models.StockHistoryTypeIn
+				reason = "Manual stock adjustment (increase)"
+			} else {
+				historyType = models.StockHistoryTypeOut
+				reason = "Manual stock adjustment (decrease)"
+			}
+			
+			err = AddStockHistoryEntry(productId, historyType, abs(quantity), previousStock, amount, reason)
+			if err != nil {
+				log.Printf("Failed to create stock history entry: %v", err)
+			}
+			
+			product.Stock = amount
+		}
 	}
 	if files := r.MultipartForm.File["pictures"]; files != nil {
 		for _, fileHeader := range files {
@@ -711,4 +753,11 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Product deleted successfully",
 	})
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }

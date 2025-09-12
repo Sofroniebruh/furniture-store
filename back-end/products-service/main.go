@@ -23,7 +23,7 @@ func main() {
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}).Handler(r)
 
@@ -36,6 +36,10 @@ func main() {
 		r.Post("/colors", services.CreateColor)
 		r.Delete("/colors", services.DeleteColor)
 		r.Put("/colors", services.UpdateColor)
+
+		r.Post("/stock", services.UpdateProductStock)
+		r.Get("/stock-history", services.GetStockHistory)
+		r.Get("/products/{id}/stock-history", services.GetProductStockHistory)
 	})
 
 	r.Get("/products", services.GetProducts)
