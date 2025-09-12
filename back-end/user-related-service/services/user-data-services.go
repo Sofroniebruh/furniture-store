@@ -128,8 +128,8 @@ func AddToWishListOrHistory(w http.ResponseWriter, r *http.Request) {
 	switch urlPath {
 	case "/user/wishlist":
 		query = `
-				INSERT INTO wishlists (user_id, product_id) 
-				VALUES ($1, $2)
+				INSERT INTO wishlists (user_id, product_id, created_at) 
+				VALUES ($1, $2, $3)
 				`
 	case "/user/history":
 		query = `
