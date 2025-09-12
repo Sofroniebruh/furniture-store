@@ -199,7 +199,7 @@ watch(productName, (newValue) => {
               </div>
             </template>
           </SheetGeneral>
-          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="">
+          <SheetGeneral :is-open="smallScreenSheet.isSheetOpen('ScreenCart')" title="Shopping Cart">
             <template #trigger>
               <li @click="smallScreenSheet.setOpenSheet(true, {name: 'ScreenCart'})">
                 <CartIcon />

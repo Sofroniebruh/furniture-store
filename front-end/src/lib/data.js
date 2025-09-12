@@ -20,6 +20,24 @@ export const reviews = [
     },
 ]
 
+export const events = [
+    {
+        name: "Sale"
+    },
+    {
+        name: "None"
+    },
+    {
+        name: "Featured"
+    },
+    {
+        name: "New"
+    },
+    {
+        name: "Best seller"
+    }
+]
+
 export const productsData = [
     {
         id: "03d419bc-c0e1-4844-a193-6b700d55c514",

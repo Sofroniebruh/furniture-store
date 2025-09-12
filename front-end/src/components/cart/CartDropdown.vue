@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { ShoppingCart, X } from 'lucide-vue-next'
 import { useCart } from '@/composables/useCart'
 import { useRouter } from 'vue-router'
+import {cn} from "@/lib/utils.js";
 
 const {
   cartItems,
@@ -44,10 +45,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full bg-white">
-    <div class="p-4">
-      <h3 class="text-lg font-semibold mb-3">Shopping Cart</h3>
-      
+  <div :class="cn('w-full h-full flex bg-white', cartItemsCount == 0 ? 'justify-center items-center' : '')">
+    <div class="p-4 flex-1">
       <div v-if="isLoading" class="flex justify-center py-8">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         <p class="text-sm text-gray-600 mt-2">Loading cart...</p>
@@ -70,7 +69,7 @@ onMounted(() => {
         <p>Your cart is empty</p>
       </div>
       
-      <div v-else>
+      <div v-else class="w-full">
         <div class="space-y-3 max-h-64 overflow-y-auto">
           <div
             v-for="item in cartItems"

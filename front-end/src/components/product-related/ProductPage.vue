@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex items-center gap-2">
             <p class="text-xl md:text-2xl font-semibold">{{ formattedPrice }}</p>
-            <span v-if="product.event" class="text-xs rounded bg-[#c9a275]/10 text-[#c9a275] px-2 py-1">{{
+            <span v-if="product.event && product.event != 'none'" class="text-xs rounded bg-[#c9a275]/10 text-[#c9a275] px-2 py-1">{{
                 product.event
               }}</span>
           </div>

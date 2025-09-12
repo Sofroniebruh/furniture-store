@@ -257,6 +257,7 @@ const handleSubmit = async () => {
 
     if (res === 201) {
       toast.success("Product was created successfully.")
+      setOpenDialog(false, {name: 'CreationDialog'})
     }
   } catch (error) {
     console.error('Error creating product:', error)
@@ -278,7 +279,7 @@ const isFormValid = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-t-lg sm:rounded-lg w-full sm:max-w-2xl sm:mx-4 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white rounded-t-lg sm:rounded-lg w-full p-6 pb-0 sm:max-w-2xl sm:mx-4 max-h-[90vh] overflow-y-auto">
     <form @submit.prevent="handleSubmit" class="space-y-4 sm:space-y-6">
       <div v-if="errors.general" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
         {{ errors.general }}
@@ -317,6 +318,7 @@ const isFormValid = computed(() => {
           <label class="block text-sm font-medium text-gray-700 mb-2">Event</label>
           <select
               v-model="formData.event"
+              style="-webkit-appearance: none;"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="none">None</option>
@@ -325,6 +327,7 @@ const isFormValid = computed(() => {
             <option value="new">New</option>
             <option value="bestseller">Bestseller</option>
           </select>
+<!--          <GeneralSelect :product-event="formData.event" v-model="formData.event" select-value="Select an event" select-label="Events" :events="events"></GeneralSelect>-->
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">

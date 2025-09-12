@@ -1,83 +1,3 @@
-<template>
-  <Wrapper class="py-8">
-    <div class="max-w-2xl mx-auto">
-      <h1 class="text-3xl font-bold mb-8">Checkout</h1>
-      
-      <!-- Loading state -->
-      <div v-if="isLoading" class="flex justify-center py-16">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
-      
-      <!-- Error state -->
-      <div v-else-if="error" class="text-center py-16">
-        <div class="text-red-600 mb-4">{{ error }}</div>
-        <router-link
-          to="/cart"
-          class="inline-block bg-[#c9a275] hover:bg-[#b8956a] text-white px-6 py-3 rounded-lg"
-        >
-          Back to Cart
-        </router-link>
-      </div>
-      
-      <!-- Checkout form -->
-      <div v-else class="space-y-8">
-        <!-- Order summary -->
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-          <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
-          
-          <div v-if="order" class="space-y-3">
-            <div class="flex justify-between">
-              <span>Total Amount</span>
-              <span class="font-semibold">{{ formatCurrency(order.total_amount) }}</span>
-            </div>
-            
-            <div v-if="order.items && order.items.length > 0">
-              <h3 class="font-medium mb-2">Items:</h3>
-              <div class="space-y-2">
-                <div
-                  v-for="item in order.items"
-                  :key="item.id"
-                  class="flex justify-between text-sm"
-                >
-                  <span>{{ item.product?.name }} × {{ item.quantity }}</span>
-                  <span>{{ formatCurrency(item.price * item.quantity) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Payment form -->
-        <div class="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 class="text-xl font-semibold mb-4">Payment Information</h2>
-          
-          <!-- Stripe Elements will be mounted here -->
-          <div id="payment-element" class="mb-6"></div>
-          
-          <div v-if="!stripeLoaded" class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p class="mt-2">Loading payment form...</p>
-          </div>
-            
-          <div v-if="paymentError" class="text-red-600 text-sm mb-4">
-            {{ paymentError }}
-          </div>
-          
-          <button
-            @click="handleSubmit"
-            :disabled="isProcessing || !paymentElement || !stripeLoaded"
-            class="w-full bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
-          >
-            <span v-if="isProcessing">Processing...</span>
-            <span v-else-if="!stripeLoaded">Loading...</span>
-            <span v-else>Complete Payment</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </Wrapper>
-</template>
-
 <script setup lang="ts">
 import { onMounted, ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -167,7 +87,7 @@ const initializeStripe = async () => {
     }
 
     stripe.value = window.Stripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-    
+
     if (!stripe.value) {
       throw new Error('Failed to initialize Stripe')
     }
@@ -185,7 +105,7 @@ const initializeStripe = async () => {
     await waitForElement('#payment-element')
 
     paymentElement.value = elements.value.create('payment')
-    
+
     try {
       paymentElement.value.mount('#payment-element')
     } catch (mountError) {
@@ -282,3 +202,69 @@ onMounted(async () => {
   }
 })
 </script>
+
+<template>
+  <Wrapper class="py-8">
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Checkout</h1>
+      <div v-if="isLoading" class="flex justify-center py-16">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+      <div v-else-if="error" class="text-center py-16">
+        <div class="text-red-600 mb-4">{{ error }}</div>
+        <router-link
+          to="/cart"
+          class="inline-block bg-[#c9a275] hover:bg-[#b8956a] text-white px-6 py-3 rounded-lg"
+        >
+          Back to Cart
+        </router-link>
+      </div>
+      <div v-else class="space-y-8">
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
+          
+          <div v-if="order" class="space-y-3">
+            <div class="flex justify-between">
+              <span>Total Amount</span>
+              <span class="font-semibold">{{ formatCurrency(order.total_amount) }}</span>
+            </div>
+            
+            <div v-if="order.items && order.items.length > 0">
+              <h3 class="font-medium mb-2">Items:</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="item in order.items"
+                  :key="item.id"
+                  class="flex justify-between text-sm"
+                >
+                  <span>{{ item.product?.name }} × {{ item.quantity }}</span>
+                  <span>{{ formatCurrency(item.price * item.quantity) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Payment Information</h2>
+          <div id="payment-element" class="mb-6"></div>
+          <div v-if="!stripeLoaded" class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p class="mt-2">Loading payment form...</p>
+          </div>
+          <div v-if="paymentError" class="text-red-600 text-sm mb-4">
+            {{ paymentError }}
+          </div>
+          <button
+            @click="handleSubmit"
+            :disabled="isProcessing || !paymentElement || !stripeLoaded"
+            class="w-full bg-[#c9a275] hover:bg-[#b8956a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
+          >
+            <span v-if="isProcessing">Processing...</span>
+            <span v-else-if="!stripeLoaded">Loading...</span>
+            <span v-else>Complete Payment</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Wrapper>
+</template>
