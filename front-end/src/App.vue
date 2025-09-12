@@ -25,11 +25,11 @@ watch(isAuthenticated, async () => {
 
 <template>
   <Toaster/>
-  <div class="w-full">
+  <div class="min-h-screen flex flex-col">
     <Header/>
-    <div class="mt-[68px]">
+    <main class="flex-1 mt-[68px]">
       <router-view></router-view>
-    </div>
+    </main>
     <Footer/>
   </div>
 </template>

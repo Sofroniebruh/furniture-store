@@ -123,22 +123,21 @@
     }
 }
 
+@layer utilities {
+    .line-clamp-2 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+}
+
 * {
     font-family: "Lato", sans-serif;
 }
 
 li {
     cursor: pointer;
-}
-
-@media (max-width: 460px) {
-    .products-block {
-        display: flex;
-        width: 100%;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
 }
 
 @media (max-width: 440px) {

@@ -51,26 +51,37 @@ onMounted(async () => {
     </Wrapper>
     <Wrapper
         class="p-0 md:pl-5 md:pt-5 pb-0 w-full md:w-3/4 flex flex-col items-center min-h-[calc(100dvh-200px-68px-76px)]">
-      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">
-        <div v-for="n in 8" :key="n" class="flex w-full items-center justify-center p-5 md:p-0">
-          <div class="w-full max-w-[300px] h-64 bg-gray-200 animate-pulse rounded"></div>
-        </div>
+      <div v-if="error === null && products === null"
+           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full">
+        <div v-for="n in 12" :key="n" 
+             class="bg-gray-200 animate-pulse rounded-lg aspect-[3/4] w-full"></div>
       </div>
-      <div class="flex justify-center items-center md:h-full h-[calc(100vh-200px-68px-76px)]"
-           v-if="products === undefined || products === null">
-        <h1 class="font-semibold text-base sm:text-lg">No products matching your request</h1>
+      <div v-else-if="products === undefined || products === null || products.length === 0"
+           class="flex justify-center items-center h-[calc(100vh-300px)]">
+        <div class="text-center">
+          <h1 class="font-semibold text-base sm:text-lg mb-2">No products found</h1>
+          <p class="text-gray-600 text-sm">Try adjusting your filters or search terms</p>
+        </div>
       </div>
       <div v-else-if="error" class="text-center py-8">
-        <p class="text-red-600">Failed to load products. Please try again.</p>
+        <p class="text-red-600 mb-4">Failed to load products. Please try again.</p>
         <Button @click="fetchProducts" class="mt-4">Retry</Button>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 products-block">
-        <div v-for="(product, index) in products" :key="product.id"
-             class="flex w-full items-center justify-center p-5 md:p-0">
-          <router-link :to="`/product/${product.id}`">
-            <ProductCard class="w-full max-w-[300px]" :product="product"/>
-          </router-link>
-        </div>
+      <div v-else
+           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full"
+           role="grid" 
+           aria-label="Product listings">
+        <router-link 
+          v-for="(product, index) in products" 
+          :key="product.id"
+          :to="`/product/${product.id}`"
+          class="group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a275] rounded-lg"
+          role="gridcell"
+          :aria-label="`View ${product.name} details`">
+          <ProductCard 
+            :product="product" 
+            class="w-full" />
+        </router-link>
       </div>
       <Pagination :set-page="setPage"
                   :current-page="currentPage"
