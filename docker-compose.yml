@@ -13,8 +13,10 @@ services:
       - fumi-network
     restart: on-failure
     depends_on:
-      - db
-      - rabbitmq
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -56,6 +58,11 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   products-service:
     build: ./back-end/products-service
@@ -70,7 +77,8 @@ services:
       - private
       - fumi-network
     depends_on:
-      - db
+      db:
+        condition: service_healthy
       
   user-related-service:
     build: ./back-end/user-related-service
@@ -86,9 +94,14 @@ services:
       - fumi-network
     restart: on-failure
     depends_on:
-      - db
-      - redis
-      - rabbitmq
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      auth-service:
+        condition: service_started
 
   cart-service:
     build: ./back-end/cart-service
@@ -104,7 +117,12 @@ services:
       - fumi-network
     restart: on-failure
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      products-service:
+        condition: service_started
       
   redis:
     image: redis:7-alpine
@@ -152,4 +170,3 @@ networks:
 volumes:
   pgdata:
   redis_data:
-
