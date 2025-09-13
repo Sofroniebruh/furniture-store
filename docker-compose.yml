@@ -9,6 +9,7 @@ services:
       - ./back-end/auth-service/.env
     networks:
       - private
+      - fumi-network
     restart: on-failure
     depends_on:
       - db
@@ -64,6 +65,7 @@ services:
       - ./back-end/products-service/.env
     networks:
       - private
+      - fumi-network
     depends_on:
       - db
       
@@ -77,6 +79,7 @@ services:
       - ./back-end/user-related-service/.env
     networks:
       - private
+      - fumi-network
     restart: on-failure
     depends_on:
       - db
@@ -93,6 +96,7 @@ services:
       - ./back-end/cart-service/.env
     networks:
       - private
+      - fumi-network
     restart: on-failure
     depends_on:
       - db
@@ -120,6 +124,7 @@ services:
     networks:
       - private
       - public
+      - fumi-network
     env_file:
       - ./front-end/.env
     restart: on-failure
@@ -136,7 +141,7 @@ networks:
   public:
     driver: bridge
   fumi-network:
-  external: true
+    external: true
 
 volumes:
   pgdata:
