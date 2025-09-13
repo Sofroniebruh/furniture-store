@@ -128,32 +128,6 @@ services:
       - products-service
       - user-related-service
       - cart-service
-      
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy-fumi
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/:/etc/nginx/conf.d/
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-      - web-root:/var/www/html
-    networks:
-      - private
-      - public
-    depends_on:
-      - frontend
-      
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-      - web-root:/var/www/html
-    command: certonly --webroot --webroot-path=/var/www/html --email vinches504@gmail.com --agree-tos --no-eff-email -d fumi.artorien.me -d www.fumi.artorien.me -d fumi.egreg.xyz
 
 
 networks:
@@ -161,11 +135,10 @@ networks:
     driver: bridge
   public:
     driver: bridge
+  fumi-network:
+  external: true
 
 volumes:
   pgdata:
   redis_data:
-  certbot-etc:
-  certbot-var:
-  web-root:
 
