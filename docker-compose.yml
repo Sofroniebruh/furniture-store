@@ -16,7 +16,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: rabbitmq-fumi
 #    ports:
 #      - "15672:15672" development
     expose:
@@ -29,7 +29,7 @@ services:
 
   lambda-bridge:
     build: ./back-end/python-bridge-lambda
-    container_name: lambda-bridge
+    container_name: lambda-bridge-fumi
     env_file:
       - ./back-end/python-bridge-lambda/.env
     depends_on:
@@ -99,7 +99,7 @@ services:
       
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: redis-fumi
 #    ports:
 #      - "6379:6379" development
     expose:
@@ -131,7 +131,7 @@ services:
       
   nginx:
     image: nginx:alpine
-    container_name: nginx-proxy
+    container_name: nginx-proxy-fumi
     restart: unless-stopped
     ports:
       - "80:80"
