@@ -7,8 +7,10 @@ services:
       - ./auth-service/.env
     networks:
       - private
+    restart: on-failure
     depends_on:
       - db
+      - rabbitmq
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -56,6 +58,45 @@ services:
       - private
     depends_on:
       - db
+      
+  user-related-service:
+    build: ./user-related-service
+    ports:
+      - "8082:8080"
+    env_file:
+      - ./user-related-service/.env
+    networks:
+      - private
+    restart: on-failure
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+
+  cart-service:
+    build: ./cart-service
+    ports:
+      - "8083:8080"
+    env_file:
+      - ./cart-service/.env
+    networks:
+      - private
+    restart: on-failure
+    depends_on:
+      - db
+      
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: always
+    networks:
+      - private
+
 
 networks:
   private:
@@ -63,3 +104,5 @@ networks:
 
 volumes:
   pgdata:
+  redis_data:
+
