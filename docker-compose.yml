@@ -135,7 +135,7 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443" 
+      - "443:443"
     volumes:
       - ./nginx/:/etc/nginx/conf.d/
       - certbot-etc:/etc/letsencrypt
@@ -165,4 +165,7 @@ networks:
 volumes:
   pgdata:
   redis_data:
+  certbot-etc:
+  certbot-var:
+  web-root:
 
