@@ -1,10 +1,10 @@
 services:
   auth-service:
-    build: ./auth-service
+    build: ./back-end/auth-service
     ports:
       - "8080:8080"
     env_file:
-      - ./auth-service/.env
+      - ./back-end/auth-service/.env
     networks:
       - private
     restart: on-failure
@@ -24,10 +24,10 @@ services:
       - private
 
   lambda-bridge:
-    build: ./python-bridge-lambda
+    build: ./back-end/python-bridge-lambda
     container_name: lambda-bridge
     env_file:
-      - ./python-bridge-lambda/.env
+      - ./back-end/python-bridge-lambda/.env
     depends_on:
       - rabbitmq
     restart: on-failure
@@ -49,22 +49,22 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   products-service:
-    build: ./products-service
+    build: ./back-end/products-service
     ports:
       - "8081:8080"
     env_file:
-      - ./products-service/.env
+      - ./back-end/products-service/.env
     networks:
       - private
     depends_on:
       - db
       
   user-related-service:
-    build: ./user-related-service
+    build: ./back-end/user-related-service
     ports:
       - "8082:8080"
     env_file:
-      - ./user-related-service/.env
+      - ./back-end/user-related-service/.env
     networks:
       - private
     restart: on-failure
@@ -74,11 +74,11 @@ services:
       - rabbitmq
 
   cart-service:
-    build: ./cart-service
+    build: ./back-end/cart-service
     ports:
       - "8083:8080"
     env_file:
-      - ./cart-service/.env
+      - ./back-end/cart-service/.env
     networks:
       - private
     restart: on-failure
@@ -97,9 +97,47 @@ services:
     networks:
       - private
 
+  frontend:
+    build: ./front-end
+    ports:
+      - "3000:80"
+    networks:
+      - private
+      - public
+    env_file:
+      - ./front-end/.env
+    restart: on-failure
+    depends_on:
+      - auth-service
+      - products-service
+      - user-related-service
+      - cart-service
+      
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - private
+      - public
+    depends_on:
+      - frontend
+
 
 networks:
   private:
+    driver: bridge
+  public:
     driver: bridge
 
 volumes:
