@@ -1,8 +1,10 @@
 services:
   auth-service:
     build: ./back-end/auth-service
-    ports:
-      - "8080:8080"
+#    ports:
+#      - "8080:8080" development
+    expose:
+      - 8080
     env_file:
       - ./back-end/auth-service/.env
     networks:
@@ -15,8 +17,10 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
-    ports:
-      - "15672:15672" 
+#    ports:
+#      - "15672:15672" development
+    expose:
+      - 15672
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -37,8 +41,10 @@ services:
   db:
     image: postgres:15-alpine
     restart: always
-    ports:
-      - "5433:5432"
+#    ports:
+#      - "5433:5432" development
+    expose:
+      - 5432
     networks:
       - private
     environment:
@@ -50,8 +56,10 @@ services:
 
   products-service:
     build: ./back-end/products-service
-    ports:
-      - "8081:8080"
+#    ports:
+#      - "8081:8080" development
+    expose:
+      - 8080
     env_file:
       - ./back-end/products-service/.env
     networks:
@@ -61,8 +69,10 @@ services:
       
   user-related-service:
     build: ./back-end/user-related-service
-    ports:
-      - "8082:8080"
+#    ports:
+#      - "8082:8080" development
+    expose:
+      - 8080
     env_file:
       - ./back-end/user-related-service/.env
     networks:
@@ -75,8 +85,10 @@ services:
 
   cart-service:
     build: ./back-end/cart-service
-    ports:
-      - "8083:8080"
+#    ports:
+#      - "8083:8080" development
+    expose:
+      - 8080
     env_file:
       - ./back-end/cart-service/.env
     networks:
@@ -88,8 +100,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
-    ports:
-      - "6379:6379"
+#    ports:
+#      - "6379:6379" development
+    expose:
+      - 6379
     volumes:
       - redis_data:/data
     command: redis-server --requirepass ${REDIS_PASSWORD}
@@ -99,8 +113,10 @@ services:
 
   frontend:
     build: ./front-end
-    ports:
-      - "3000:80"
+#    ports:
+#      - "3000:80" development
+    expose:
+      - 80
     networks:
       - private
       - public
@@ -119,19 +135,25 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
+      - "443:443" 
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
-      - ./nginx/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/:/etc/nginx/conf.d/
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
     networks:
       - private
       - public
     depends_on:
       - frontend
+      
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    command: certonly --webroot --webroot-path=/var/www/html --email vinches504@gmail.com --agree-tos --no-eff-email -d fumi.artorien.me -d www.fumi.artorien.me -d fumi.egreg.xyz
 
 
 networks:
