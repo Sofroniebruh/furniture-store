@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 
 	"cart-service/config"
@@ -12,24 +11,21 @@ import (
 
 var DB *sqlx.DB
 
-func Init(cfg *config.Config) {
+func Init() error {
 	var err error
-	
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
-	
-	DB, err = sqlx.Connect("postgres", dsn)
+	DB, err = sqlx.Connect("postgres", config.LoadConfig().DbUrl)
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		return err
 	}
 
 	if err = DB.Ping(); err != nil {
-		log.Fatal("Failed to ping database:", err)
+		return err
 	}
 
 	log.Println("Successfully connected to database")
-	
+
 	runMigrations()
+	return nil
 }
 
 func runMigrations() {
@@ -95,10 +91,10 @@ func runMigrations() {
 		BEFORE UPDATE ON orders
 		FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 	`
-	
+
 	if _, err := DB.Exec(migrationSQL); err != nil {
 		log.Fatal("Failed to run migrations:", err)
 	}
-	
+
 	log.Println("Migrations completed successfully")
 }

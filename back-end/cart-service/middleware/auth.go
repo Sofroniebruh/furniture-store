@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -8,7 +10,6 @@ import (
 
 	"cart-service/config"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -20,53 +21,60 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		tokenString, err := c.Cookie("access_token")
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Access token not found"})
-			c.Abort()
-			return
-		}
-
-		tokenString = strings.TrimSpace(tokenString)
-		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Empty access token"})
-			c.Abort()
-			return
-		}
-
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenString, err := r.Cookie("access_token")
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Access token not found"})
+				return
 			}
-			return []byte(jwtSecret), nil
+
+			tokenValue := strings.TrimSpace(tokenString.Value)
+			if tokenValue == "" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Empty access token"})
+				return
+			}
+
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenValue, claims, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return []byte(jwtSecret), nil
+			})
+
+			if err != nil || !token.Valid {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid access token"})
+				return
+			}
+
+			if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Token expired"})
+				return
+			}
+
+			userID, err := uuid.Parse(claims.UserID)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid user ID"})
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), config.UserIdKey, userID)
+			ctx = context.WithValue(ctx, "user_email", claims.Email)
+			ctx = context.WithValue(ctx, "user_roles", claims.Roles)
+
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid access token"})
-			c.Abort()
-			return
-		}
-
-		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
-			c.Abort()
-			return
-		}
-
-		userID, err := uuid.Parse(claims.UserID)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-			c.Abort()
-			return
-		}
-
-		c.Set(string(config.UserIdKey), userID)
-		c.Set("user_email", claims.Email)
-		c.Set("user_roles", claims.Roles)
-
-		c.Next()
 	}
 }

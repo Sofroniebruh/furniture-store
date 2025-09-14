@@ -8,16 +8,12 @@ import (
 )
 
 type Config struct {
-	DBHost              string
-	DBPort              string
-	DBUser              string
-	DBPassword          string
-	DBName              string
-	Port                string
-	JWTSecret           string
-	StripeSecretKey     string
-	StripePublishableKey string
-	StripeWebhookSecret string
+	DbUrl                 string
+	Port                  string
+	JWTSecret             string
+	StripeSecretKey       string
+	StripePublishableKey  string
+	StripeWebhookSecret   string
 	UserRelatedServiceURL string
 }
 
@@ -31,16 +27,11 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DBHost:              getEnv("DB_HOST", "localhost"),
-		DBPort:              getEnv("DB_PORT", "5433"),
-		DBUser:              getEnv("DB_USER", "postgres"),
-		DBPassword:          getEnv("DB_PASSWORD", ""),
-		DBName:              getEnv("DB_NAME", "furniture_store"),
-		Port:                getEnv("PORT", "8083"),
-		JWTSecret:           getEnv("JWT_SECRET", ""),
-		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
-		StripePublishableKey: getEnv("STRIPE_PUBLISHABLE_KEY", ""),
-		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		DbUrl:                 getEnv("DATABASE_URL", ""),
+		JWTSecret:             getEnv("JWT_SECRET", ""),
+		StripeSecretKey:       getEnv("STRIPE_SECRET_KEY", ""),
+		StripePublishableKey:  getEnv("STRIPE_PUBLISHABLE_KEY", ""),
+		StripeWebhookSecret:   getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		UserRelatedServiceURL: getEnv("USER_RELATED_SERVICE_URL", "http://localhost:8082"),
 	}
 }

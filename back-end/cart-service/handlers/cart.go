@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -8,113 +9,146 @@ import (
 	"cart-service/models"
 	"cart-service/services"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-func GetCart(c *gin.Context) {
-	userID := c.MustGet(string(config.UserIdKey)).(uuid.UUID)
+func GetCart(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(config.UserIdKey).(uuid.UUID)
 
 	cart, err := services.GetCart(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get cart"})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to get cart"})
 		return
 	}
 
-	c.JSON(http.StatusOK, cart)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(cart)
 }
 
-func AddToCart(c *gin.Context) {
-	userID := c.MustGet(string(config.UserIdKey)).(uuid.UUID)
+func AddToCart(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(config.UserIdKey).(uuid.UUID)
 
 	var req models.AddToCartRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
 	err := services.AddToCart(userID, req.ProductID, req.Quantity)
 	if err != nil {
 		log.Printf("AddToCart error: %v", err)
+		w.Header().Set("Content-Type", "application/json")
 		if err.Error() == "product not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 		if err.Error() == "insufficient stock" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Item added to cart successfully"})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Item added to cart successfully"})
 }
 
-func UpdateCartItem(c *gin.Context) {
-	userID := c.MustGet(string(config.UserIdKey)).(uuid.UUID)
+func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(config.UserIdKey).(uuid.UUID)
 
-	itemIDStr := c.Param("id")
+	itemIDStr := chi.URLParam(r, "id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid item ID"})
 		return
 	}
 
 	var req models.UpdateCartItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
 	err = services.UpdateCartItem(userID, itemID, req.Quantity)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		if err.Error() == "cart item not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 		if err.Error() == "insufficient stock" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update cart item"})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to update cart item"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Cart item updated successfully"})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Cart item updated successfully"})
 }
 
-func RemoveFromCart(c *gin.Context) {
-	userID := c.MustGet(string(config.UserIdKey)).(uuid.UUID)
+func RemoveFromCart(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(config.UserIdKey).(uuid.UUID)
 
-	itemIDStr := c.Param("id")
+	itemIDStr := chi.URLParam(r, "id")
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid item ID"})
 		return
 	}
 
 	err = services.RemoveFromCart(userID, itemID)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		if err.Error() == "cart item not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove item from cart"})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to remove item from cart"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Item removed from cart successfully"})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Item removed from cart successfully"})
 }
 
-func ClearCart(c *gin.Context) {
-	userID := c.MustGet(string(config.UserIdKey)).(uuid.UUID)
+func ClearCart(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(config.UserIdKey).(uuid.UUID)
 
 	err := services.ClearCart(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear cart"})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to clear cart"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Cart cleared successfully"})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Cart cleared successfully"})
 }
