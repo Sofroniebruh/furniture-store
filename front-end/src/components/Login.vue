@@ -33,18 +33,23 @@ const onSubmit = handleSubmit(async values => {
   try {
     const res = await auth.login(values)
 
-    if (res.status === 200) {
+    if (res?.status === 200) {
       toast.success("Log in successfully")
       setOpenDialog(false, {name: "LoginDialog"})
 
       if (window.innerWidth < 640) {
         setAllSheetsClosed()
 
-        await router.push("/profile/" + res.body.user.id)
+        if (res.body?.user?.id) {
+          await router.push("/profile/" + res.body.user.id)
+        }
       }
+    } else if (res?.status === 403 && res.body?.error?.includes("not verified")) {
+      toast.error("Please verify your email before logging in")
     }
   } catch (error) {
     console.error(error)
+    toast.error("An unexpected error occurred")
   }
 })
 </script>

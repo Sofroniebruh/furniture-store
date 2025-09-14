@@ -73,17 +73,18 @@ const handlePrev = () => {
 }
 
 const onSubmit = handleSubmit(async values => {
-  console.log(values)
   try {
     const res = await auth.registration(values)
 
-    if (res == 201) {
+    if (res?.status === 201) {
       toast.success("You've been registered. Please verify the email.")
       stepIndex.value++
+    } else if (res?.body?.error) {
+      toast.error(res.body.error)
     }
   } catch (error) {
     console.error(error)
-    toast(auth.error)
+    toast.error("An unexpected error occurred")
   }
 })
 
@@ -105,13 +106,17 @@ const handleResend = async () => {
   try {
     const res = await auth.resendCode(values.email!)
 
-    if (res != 200) {
+    if (res !== 200) {
       stepIndex.value = 3
       console.error(auth.error)
+      toast.error("Failed to resend code. Please try again.")
+    } else {
+      toast.success("Verification code sent successfully")
     }
   } catch (error) {
     console.error(error)
     stepIndex.value = 3
+    toast.error("An unexpected error occurred")
   }
 }
 </script>

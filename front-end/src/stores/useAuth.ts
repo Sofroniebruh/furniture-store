@@ -32,40 +32,51 @@ export const useAuthStore = defineStore("authStore", () => {
     const isAdmin = ref<boolean>(false);
 
     const handleSendingAuthData = async (endpoint: string, body: UserCredentialsInput): Promise<AuthBody> => {
-        error.value = ""
-        loading.value = true;
-        const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/${endpoint}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-            credentials: "include"
-        })
-        loading.value = false;
+        try {
+            error.value = ""
+            loading.value = true;
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/${endpoint}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(body),
+                credentials: "include"
+            })
+            loading.value = false;
 
-        const data = await res.json() as AuthResponse;
+            const data = await res.json() as AuthResponse;
 
-        if (data.user!.roles.some(role => role === "admin")) {
-            isAdmin.value = true;
-        }
+            if (data?.user?.roles?.some(role => role === "admin")) {
+                isAdmin.value = true;
+            }
 
-        if (!res.ok) {
-            error.value = res.status === 401 && endpoint.endsWith("login") ? "Password and/or email are incorrect" : data?.error || "Unknown error";
-            console.error("Error: ", error.value);
+            if (!res.ok) {
+                error.value = res.status === 401 && endpoint.endsWith("login") ? "Password and/or email are incorrect" : data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return {
+                    status: res.status,
+                    body: data
+                };
+            }
+
+            if (endpoint.endsWith("login") && data?.user) {
+                isAuthenticated.value = true;
+                user.value = data.user
+            }
+
             return {
-                status: res.status
+                status: res.status,
+                body: data
+            }
+        } catch (e) {
+            loading.value = false;
+            error.value = "Network error or server unavailable";
+            console.error("Network error: ", e);
+            return {
+                status: 500,
+                body: { error: "Network error" }
             };
-        }
-
-        if (endpoint.endsWith("login")) {
-            isAuthenticated.value = true;
-            user.value = data?.user!
-        }
-
-        return {
-            status: res.status,
-            body: data
         }
     }
     const fetchUser = async () => {
@@ -90,22 +101,24 @@ export const useAuthStore = defineStore("authStore", () => {
                 credentials: "include"
             })
 
-            const data = await res.json() as { user: User }
-
-            if (data.user.roles.some(role => role === "admin")) {
-                isAdmin.value = true;
-            }
-
             if (!res.ok) {
                 isAuthenticated.value = false;
                 user.value = null;
                 return
             }
 
+            const data = await res.json() as { user: User }
+
+            if (data?.user?.roles?.some(role => role === "admin")) {
+                isAdmin.value = true;
+            }
+
             isAuthenticated.value = true
             user.value = data.user
         } catch (e) {
             console.error(e)
+            isAuthenticated.value = false;
+            user.value = null;
         }
     }
     const verifyCode = async (code: string, email: string) => {
@@ -126,21 +139,21 @@ export const useAuthStore = defineStore("authStore", () => {
 
             const data = await res.json()
 
-            loading.value = false;
-
             if (!res.ok) {
                 error.value = data?.error || "Unknown error";
                 console.error("Error: ", error.value);
                 return false
             }
 
-
-            isAuthenticated.value = true
-            user.value = data.verified!
+            if (data?.verified) {
+                isAuthenticated.value = true
+                user.value = data.verified
+            }
 
             return true
         } catch (e) {
             console.error(e)
+            error.value = "Network error or server unavailable";
             return false
         } finally {
             loading.value = false
@@ -196,19 +209,26 @@ export const useAuthStore = defineStore("authStore", () => {
             console.error(e)
         }
     }
-    const registration = async (body: UserCredentialsInput) => {
+    const registration = async (body: UserCredentialsInput): Promise<AuthBody> => {
         try {
             return await handleSendingAuthData("registration", body)
         } catch (e) {
             console.error(e)
-            return 500
+            return {
+                status: 500,
+                body: { error: "Network error" }
+            }
         }
     }
-    const login = async (body: UserCredentialsInput) => {
+    const login = async (body: UserCredentialsInput): Promise<AuthBody> => {
         try {
             return await handleSendingAuthData("login", body)
         } catch (e) {
             console.error(e)
+            return {
+                status: 500,
+                body: { error: "Network error" }
+            }
         }
     }
 
