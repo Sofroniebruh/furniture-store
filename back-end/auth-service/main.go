@@ -3,6 +3,7 @@ package main
 import (
 	"auth-service/db"
 	"auth-service/handlers"
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"log"
@@ -108,6 +109,16 @@ func main() {
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}).Handler(r)
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "API server running",
+			"version": "1.0",
+			"service": "auth",
+		})
+	})
 
 	r.Post("/registration", handlers.Signup)
 	r.Post("/login", handlers.Login)
