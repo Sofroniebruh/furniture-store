@@ -17,7 +17,7 @@ API_GATEWAY_KEY = os.getenv("AWS_API_GATEWAY_KEY")
 
 def main():
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
-    conn = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq', 5672, '/', credentials))
+    conn = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq', 15672, '/', credentials))
     channel = conn.channel()
     channel.queue_declare(queue='verifyEmail')
 
