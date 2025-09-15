@@ -23,7 +23,7 @@ func main() {
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173", "https://fumi.artorien.me"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}).Handler(r)
 
