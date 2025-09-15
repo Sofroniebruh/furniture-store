@@ -57,7 +57,7 @@ func main() {
 	r.Get("/colors", services.GetAllColors)
 
 	log.Println("Listening on port 8080")
-	err = http.ListenAndServe(":8080", handler)
+	err = http.ListenAndServe("0.0.0.0:8080", handler)
 
 	if err != nil {
 		log.Fatal("Failed listening on port 8080: ", err)
