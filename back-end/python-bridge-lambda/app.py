@@ -65,17 +65,7 @@ def send_data(decoded_body):
     }
     url = API_GATEWAY_URL + "/process-data-to-ses"
 
-    api_gateway_event = {
-        "body": decoded_body,
-        "headers": {
-            "Content-Type": "application/json",
-            "x-api-key": API_GATEWAY_KEY,
-        },
-        "httpMethod": "POST",
-        "isBase64Encoded": False
-    }
-
-    response = requests.post(url, headers=headers, json=api_gateway_event)
+    response = requests.post(url, headers=headers, json=decoded_body)
 
     return response.json()
 
