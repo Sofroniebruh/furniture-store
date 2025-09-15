@@ -22,7 +22,7 @@ func main() {
 	r := chi.NewRouter()
 
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "https://fumi.artorien.me"},
+		AllowedOrigins:   []string{"http://localhost:5173", "https://fumi.artorien.me", "https://fumi.egreg.xyz"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
