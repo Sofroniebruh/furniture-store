@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"log"
@@ -26,6 +27,14 @@ func main() {
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}).Handler(r)
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "ok",
+		})
+	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.ProtectedWithRoles("admin"))

@@ -77,7 +77,13 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
             System.out.println("Raw request body: " + request.getBody());
             System.out.println("Request headers: " + request.getHeaders());
             
-            EmailPOJO emailPOJO = objectMapper.readValue(request.getBody(), EmailPOJO.class);
+            String requestBody = request.getBody();
+            // Handle case where body might be double-encoded as a JSON string
+            if (requestBody.startsWith("\"") && requestBody.endsWith("\"")) {
+                requestBody = objectMapper.readValue(requestBody, String.class);
+            }
+            
+            EmailPOJO emailPOJO = objectMapper.readValue(requestBody, EmailPOJO.class);
             String receiverEmail = emailPOJO.getEmail();
             String body = emailPOJO.getMessageBody();
             String emailBody;
