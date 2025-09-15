@@ -157,6 +157,8 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
@@ -164,6 +166,8 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 
@@ -174,6 +178,8 @@ func clearAuthCookies(w http.ResponseWriter) {
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
@@ -181,6 +187,8 @@ func clearAuthCookies(w http.ResponseWriter) {
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 
@@ -437,6 +445,7 @@ func ResendCode(w http.ResponseWriter, r *http.Request) {
 
 	response, err := GenerateCode(data)
 	if err != nil {
+		log.Println(err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to generate code")
 		return
 	}
