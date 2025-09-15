@@ -25,6 +25,7 @@ services:
 #      - "15672:15672"
     expose:
       - 15672
+      - 5672
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
