@@ -27,6 +27,7 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
+		Port:                  getEnv("PORT", "8080"),
 		DbUrl:                 getEnv("DATABASE_URL", ""),
 		JWTSecret:             getEnv("JWT_SECRET", ""),
 		StripeSecretKey:       getEnv("STRIPE_SECRET_KEY", ""),
