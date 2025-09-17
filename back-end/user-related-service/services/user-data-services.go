@@ -249,7 +249,7 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 		err = db.DB.Get(&totalCount, "SELECT COUNT(*) FROM wishlists WHERE user_id = $1", userId)
 	case "/user/history":
 		query = `
-            SELECT p.* 
+            SELECT p.id, p.name, p.stock, p.price, p.description, p.picture_urls, p.event, p.model
             FROM products p
             JOIN histories w ON p.id = w.product_id
             WHERE w.user_id = $1
@@ -287,7 +287,7 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to get user's product id",
+				"error": "Failed to get user's product information",
 			})
 			return
 		}
