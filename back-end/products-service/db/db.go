@@ -70,6 +70,21 @@ func runMigrations() {
 	CREATE OR REPLACE TRIGGER update_products_updated_at
 		BEFORE UPDATE ON products
 		FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+	CREATE TABLE IF NOT EXISTS stock_history (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+		type VARCHAR(20) NOT NULL CHECK (type IN ('in', 'out', 'adjustment')),
+		quantity INTEGER NOT NULL,
+		previous_stock INTEGER NOT NULL,
+		new_stock INTEGER NOT NULL,
+		reason TEXT NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_stock_history_product_id ON stock_history(product_id);
+	CREATE INDEX IF NOT EXISTS idx_stock_history_type ON stock_history(type);
+	CREATE INDEX IF NOT EXISTS idx_stock_history_created_at ON stock_history(created_at);
 	`
 	
 	if _, err := DB.Exec(migrationSQL); err != nil {
