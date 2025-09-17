@@ -238,7 +238,7 @@ func GetWishlistOrHistoryPerUser(w http.ResponseWriter, r *http.Request) {
 	switch urlType {
 	case "/user/wishlist":
 		query = `
-            SELECT p.* 
+            SELECT p.id, p.name, p.stock, p.price, p.description, p.picture_urls, p.event, p.model
             FROM products p
             JOIN wishlists w ON p.id = w.product_id
             WHERE w.user_id = $1
