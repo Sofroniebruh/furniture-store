@@ -18,7 +18,9 @@ const product = props.product;
 <template>
   <div class="flex flex-col">
     <div class="rounded-sm w-[150px] h-[150px] overflow-hidden">
-      <img class="w-full h-full object-cover" :src="product!.pictureUrls[0]" alt="product image">
+      <router-link :to="`/product/${product!.id}`">
+        <img class="w-full h-full object-cover" :src="product!.pictureUrls[0]" alt="product image">
+      </router-link>
     </div>
     <div class="flex items-center justify-between">
       <p>{{ product!.name }}</p>

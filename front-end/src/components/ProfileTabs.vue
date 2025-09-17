@@ -117,7 +117,14 @@ onMounted(async () => {
 
       <TabsContent value="history" class="w-full flex-1 flex flex-col">
         <div
-            :class="cn(isOnProfilePage ? 'w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 products-block'
+            :class="cn(isOnProfilePage ?
+            `
+                 h-[calc(100%-185px)] sm:h-full
+                 overflow-y-auto
+                 flex flex-col sm:grid
+                 grid-cols-2 md:grid-cols-4 lg:grid-cols-5
+                 gap-8
+                 products-block`
             : 'h-[calc(100%-185px)] overflow-y-auto flex flex-col')">
           <div v-if="isHistoryLoading"
                :class="cn(isOnProfilePage

@@ -21,7 +21,9 @@ defineProps({
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-2">
       <div class="overflow-hidden w-[100px] h-auto">
-        <img class="object-cover w-full h-full" :src="product!.pictureUrls[0]" alt="product image">
+        <router-link :to="`/product/${product!.id}`">
+          <img class="object-cover w-full h-full" :src="product!.pictureUrls[0]" alt="product image">
+        </router-link>
       </div>
       <div>
         <p class="text-base text-gray-700">{{ product!.name }}</p>
