@@ -18,10 +18,10 @@ const product = props.product;
 <template>
   <div class="flex flex-col">
     <div class="rounded-sm w-[150px] h-[150px] overflow-hidden">
-      <img class="w-full h-full object-cover" :src="product.pictureUrls[0]" alt="product image">
+      <img class="w-full h-full object-cover" :src="product!.pictureUrls[0]" alt="product image">
     </div>
     <div class="flex items-center justify-between">
-      <p>{{ product.name }}</p>
+      <p>{{ product!.name }}</p>
       <WishlistDelete v-if="!isHistoryCard" :product="product"></WishlistDelete>
       <PurchaseHistory v-else :product="product"/>
     </div>

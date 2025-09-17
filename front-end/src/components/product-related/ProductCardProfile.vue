@@ -21,11 +21,11 @@ defineProps({
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-2">
       <div class="overflow-hidden w-[100px] h-auto">
-        <img class="object-cover w-full h-full" :src="product.pictureUrls[0]" alt="product image">
+        <img class="object-cover w-full h-full" :src="product!.pictureUrls[0]" alt="product image">
       </div>
       <div>
-        <p class="text-base text-gray-700">{{ product.name }}</p>
-        <p class="text-sm font-semibold">{{ product.price }} &#8364;</p>
+        <p class="text-base text-gray-700">{{ product!.name }}</p>
+        <p class="text-sm font-semibold">{{ product!.price }} &#8364;</p>
       </div>
     </div>
     <WishlistDelete :product="product" v-if="!isHistoryCard"/>
