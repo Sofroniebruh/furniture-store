@@ -25,15 +25,15 @@ type Cart struct {
 }
 
 type Order struct {
-	ID                uuid.UUID   `json:"id" db:"id"`
-	UserID            uuid.UUID   `json:"user_id" db:"user_id"`
-	StripePaymentID   string      `json:"stripe_payment_id" db:"stripe_payment_id"`
-	TotalAmount       float64     `json:"total_amount" db:"total_amount"`
-	Status            OrderStatus `json:"status" db:"status"`
-	CreatedAt         time.Time   `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time   `json:"updated_at" db:"updated_at"`
-	Items             []OrderItem `json:"items,omitempty"`
-	StripeClientSecret string     `json:"stripe_client_secret,omitempty"`
+	ID                 uuid.UUID   `json:"id" db:"id"`
+	UserID             uuid.UUID   `json:"user_id" db:"user_id"`
+	StripePaymentID    string      `json:"stripe_payment_id" db:"stripe_payment_id"`
+	TotalAmount        float64     `json:"total_amount" db:"total_amount"`
+	Status             OrderStatus `json:"status" db:"status"`
+	CreatedAt          time.Time   `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time   `json:"updated_at" db:"updated_at"`
+	Items              []OrderItem `json:"items,omitempty"`
+	StripeClientSecret string      `json:"stripe_client_secret,omitempty"`
 }
 
 type OrderItem struct {
@@ -63,6 +63,8 @@ type Product struct {
 	PictureUrls pq.StringArray `json:"pictureUrls" db:"picture_urls"`
 	Event       string         `json:"event" db:"event"`
 	Model       string         `json:"model" db:"model"`
+	CreatedAt   time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 type AddToCartRequest struct {

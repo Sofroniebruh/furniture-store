@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"time"
 )
 
 type Product struct {
@@ -15,4 +16,6 @@ type Product struct {
 	Event       string         `json:"event" db:"event"`
 	Model       string         `json:"model" db:"model"`
 	Colors      []Color        `json:"colors"`
+	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updatedAt" db:"updated_at"`
 }
