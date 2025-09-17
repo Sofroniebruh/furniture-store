@@ -79,7 +79,7 @@ func AddColorsToProduct(productId uuid.UUID, colors []models.Color) (models.Prod
 
 	var productToAddColors models.Product
 
-	err = tx.Get(&productToAddColors, "SELECT * FROM products WHERE id = $1", productId)
+	err = tx.Get(&productToAddColors, "SELECT id, name, stock, price, picture_urls, description, event, model FROM products WHERE id = $1", productId)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Product{}, errors.New("product not found")
@@ -345,7 +345,7 @@ func GetProductById(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
 	id := chi.URLParam(r, "id")
 
-	err := db.DB.Get(&product, "SELECT * FROM products WHERE id = $1", id)
+	err := db.DB.Get(&product, "SELECT id, name, stock, price, picture_urls, description, event, model FROM products WHERE id = $1", id)
 
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusNotFound)
@@ -571,7 +571,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.DB.Get(&product, "SELECT * FROM products WHERE id = $1", productId)
+	err = db.DB.Get(&product, "SELECT id, name, stock, price, picture_urls, description, event, model FROM products WHERE id = $1", productId)
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -636,11 +636,11 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		if amount != previousStock {
 			updates = append(updates, "stock = :stock")
 			params["stock"] = amount
-			
+
 			var historyType models.StockHistoryType
 			var reason string
 			quantity := amount - previousStock
-			
+
 			if quantity > 0 {
 				historyType = models.StockHistoryTypeIn
 				reason = "Manual stock adjustment (increase)"
@@ -648,12 +648,12 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 				historyType = models.StockHistoryTypeOut
 				reason = "Manual stock adjustment (decrease)"
 			}
-			
+
 			err = AddStockHistoryEntry(productId, historyType, abs(quantity), previousStock, amount, reason)
 			if err != nil {
 				log.Printf("Failed to create stock history entry: %v", err)
 			}
-			
+
 			product.Stock = amount
 		}
 	}

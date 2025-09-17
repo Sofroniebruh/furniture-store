@@ -45,7 +45,7 @@ func UpdateProductStock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var product models.Product
-	err = db.DB.Get(&product, "SELECT * FROM products WHERE id = $1", request.ProductID)
+	err = db.DB.Get(&product, "SELECT id, name, stock, price, picture_urls, description, event, model FROM products WHERE id = $1", request.ProductID)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		w.WriteHeader(http.StatusNotFound)
@@ -162,7 +162,7 @@ func GetStockHistory(w http.ResponseWriter, r *http.Request) {
 		baseQuery = `
 			SELECT sh.id, sh.product_id, sh.type, sh.quantity, sh.previous_stock, 
 				   sh.new_stock, sh.reason, sh.created_at,
-				   p.name, p.description, p.stock, p.price, p.picture_urls, p.event, p.model
+				   p.name, p.stock, p.price, p.picture_urls, p.description, p.event, p.model
 			FROM stock_history sh
 			JOIN products p ON sh.product_id = p.id
 			WHERE sh.product_id = $1
@@ -175,7 +175,7 @@ func GetStockHistory(w http.ResponseWriter, r *http.Request) {
 		baseQuery = `
 			SELECT sh.id, sh.product_id, sh.type, sh.quantity, sh.previous_stock, 
 				   sh.new_stock, sh.reason, sh.created_at,
-				   p.name, p.description, p.stock, p.price, p.picture_urls, p.event, p.model
+				   p.name, p.stock, p.price, p.picture_urls, p.description, p.event, p.model
 			FROM stock_history sh
 			JOIN products p ON sh.product_id = p.id
 			ORDER BY sh.created_at DESC
@@ -221,8 +221,8 @@ func GetStockHistory(w http.ResponseWriter, r *http.Request) {
 		err = rows.Scan(
 			&history.ID, &history.ProductID, &history.Type, &history.Quantity,
 			&history.PreviousStock, &history.NewStock, &history.Reason, &history.CreatedAt,
-			&product.Name, &product.Description, &product.Stock, &product.Price,
-			&product.PictureUrls, &product.Event, &product.Model,
+			&product.Name, &product.Stock, &product.Price, &product.PictureUrls,
+			&product.Description, &product.Event, &product.Model,
 		)
 
 		if err != nil {
