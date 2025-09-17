@@ -68,7 +68,7 @@ const updateProduct = async () => {
     formData.append('description', form.value.description)
     formData.append('price', form.value.price.toString())
     formData.append('stock', form.value.stock.toString())
-    formData.append('model', form.value.model)
+    formData.append('model', form.value.model.toLowerCase())
     formData.append('event', form.value.event)
     
     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/products?id=${props.product.id}`, {
@@ -101,7 +101,7 @@ const updateProduct = async () => {
             v-model="form.name"
             type="text"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
           >
         </div>
         <div>
@@ -110,7 +110,7 @@ const updateProduct = async () => {
             v-model="form.description"
             required
             rows="3"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
           ></textarea>
         </div>
         
@@ -123,7 +123,7 @@ const updateProduct = async () => {
               step="0.01"
               min="0"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
             >
           </div>
           <div>
@@ -133,7 +133,7 @@ const updateProduct = async () => {
               type="number"
               min="0"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
             >
           </div>
         </div>
@@ -141,19 +141,24 @@ const updateProduct = async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
-            <input
-              v-model="form.model"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+            <select
+                v-model="form.model"
+                style="-webkit-appearance: none;"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
             >
+              <option value="" disabled>Select a model</option>
+              <option value="bed">Bed</option>
+              <option value="chair">Chair</option>
+              <option value="table">Table</option>
+              <option value="sofa">Sofa</option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Event</label>
             <select
               v-model="form.event"
               style="-webkit-appearance: none;"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
             >
               <option value="none">None</option>
               <option value="sale">Sale</option>
@@ -187,7 +192,7 @@ const updateProduct = async () => {
                 v-model="newColor"
                 type="text"
                 placeholder="Add color..."
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-[#c9a275]"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9a275] focus:border-transparent"
                 @keyup.enter.prevent="addColor"
               >
               <button
