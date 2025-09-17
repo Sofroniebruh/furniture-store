@@ -384,7 +384,7 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
                       <template #trigger>
                         <button
                             @click="openEditModal(product)"
-                            class="text-blue-600 hover:text-blue-900"
+                            class="text-blue-600 cursor-pointer hover:text-blue-900"
                         >
                           Edit
                         </button>
@@ -402,7 +402,7 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
                       <template #trigger>
                         <button
                             @click="openDeleteModal(product)"
-                            class="text-red-600 hover:text-red-900"
+                            class="text-red-600 cursor-pointer hover:text-red-900"
                         >
                           Delete
                         </button>

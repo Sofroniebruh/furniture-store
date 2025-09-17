@@ -198,7 +198,7 @@ const updateProduct = async () => {
               <button
                 type="button"
                 @click="addColor"
-                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                class="px-4 py-2 bg-gray-100 cursor-pointer text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Add
               </button>
@@ -209,14 +209,14 @@ const updateProduct = async () => {
           <button
             type="button"
             @click="close"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+            class="flex-1 px-4 py-2 border cursor-pointer border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
           >
             Cancel
           </button>
           <button
             type="submit"
             :disabled="isSubmitting"
-            class="flex-1 px-4 py-2 bg-[#c9a275] text-white rounded-lg hover:bg-[#b8956a] font-medium disabled:opacity-50"
+            class="flex-1 px-4 py-2 bg-[#c9a275] text-white cursor-pointer rounded-lg hover:bg-[#b8956a] font-medium disabled:opacity-50"
           >
             {{ isSubmitting ? 'Updating...' : 'Update Product' }}
           </button>

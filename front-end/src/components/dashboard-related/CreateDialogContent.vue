@@ -451,7 +451,7 @@ const isFormValid = computed(() => {
                 v-if="formData.colors.length > 1"
                 @click="removeColor(index)"
                 type="button"
-                class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
+                class="px-3 py-2 text-red-600 cursor-pointer hover:text-red-800 hover:bg-red-50 rounded-lg"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -461,7 +461,7 @@ const isFormValid = computed(() => {
           <button
               @click="addColor()"
               type="button"
-              class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              class="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-50"
           >
             + Add another color
           </button>
@@ -473,14 +473,14 @@ const isFormValid = computed(() => {
             @click="closeModals"
             type="button"
             :disabled="isSubmitting"
-            class="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50"
+            class="flex-1 px-4 py-3 sm:py-2 border border-gray-300 cursor-pointer rounded-lg text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50"
         >
           Cancel
         </button>
         <button
             type="submit"
             :disabled="isSubmitting || !isFormValid"
-            class="flex-1 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            class="flex-1 px-4 py-3 sm:py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
                fill="none" viewBox="0 0 24 24">
