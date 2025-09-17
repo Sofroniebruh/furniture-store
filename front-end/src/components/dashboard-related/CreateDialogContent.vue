@@ -215,7 +215,7 @@ const createFormData = (): FormData => {
     description: formData.description.trim(),
     price: Number(formData.price).toFixed(2),
     stock: Number(formData.amount),
-    model: formData.model.trim(),
+    model: formData.model.trim().toLowerCase(),
     event: formData.event,
     colors: formData.colors
         .filter(color => color.name.trim())
@@ -304,14 +304,16 @@ const isFormValid = computed(() => {
           <label class="block text-sm font-medium text-gray-700 mb-2">
             Model <span class="text-red-500">*</span>
           </label>
-          <input
+          <select
               v-model="formData.model"
-              type="text"
-              :class="[
-              'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-              errors.model ? 'border-red-500' : 'border-gray-300'
-            ]"
+              style="-webkit-appearance: none;"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
+            <option value="bed">Bed</option>
+            <option value="chair">Chair</option>
+            <option value="table">Table</option>
+            <option value="sofa">Sofa</option>
+          </select>
           <p v-if="errors.model" class="mt-1 text-sm text-red-600">{{ errors.model }}</p>
         </div>
         <div>
@@ -327,7 +329,7 @@ const isFormValid = computed(() => {
             <option value="new">New</option>
             <option value="bestseller">Bestseller</option>
           </select>
-<!--          <GeneralSelect :product-event="formData.event" v-model="formData.event" select-value="Select an event" select-label="Events" :events="events"></GeneralSelect>-->
+          <!--          <GeneralSelect :product-event="formData.event" v-model="formData.event" select-value="Select an event" select-label="Events" :events="events"></GeneralSelect>-->
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
