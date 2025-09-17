@@ -25,7 +25,7 @@ const handleLogout = async () => {
 
 <template>
   <div class="flex flex-col h-full w-full px-5" v-if="auth.isAuthenticated">
-    <div>
+    <div class="pt-4">
       <Button @click.stop="handleLogout" class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Log out
         <LogOut/>
       </Button>

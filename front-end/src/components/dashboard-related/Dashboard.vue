@@ -52,6 +52,13 @@ const filteredProducts = computed(() => {
       aValue = aValue.toLowerCase()
       bValue = bValue.toLowerCase()
     }
+    else if (typeof aValue === 'number' && typeof bValue === 'number') {
+      if (sortOrder.value === 'asc') {
+        return aValue - bValue
+      } else {
+        return bValue - aValue
+      }
+    }
 
     if (sortOrder.value === 'asc') {
       return aValue > bValue ? 1 : -1
@@ -301,7 +308,7 @@ const {setOpenDialog, isDialogOpen} = useScreenSheetStore()
               >
                 <option value="name">Name</option>
                 <option value="price">Price</option>
-                <option value="amount">Stock</option>
+                <option value="stock">Stock</option>
                 <option value="model">Model</option>
               </select>
               <button
