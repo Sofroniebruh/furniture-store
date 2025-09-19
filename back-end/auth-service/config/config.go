@@ -64,6 +64,10 @@ func (r *RedisConfig) Delete(key string) error {
 	return r.client.Del(r.ctx, key).Err()
 }
 
+func (r *RedisConfig) Keys(pattern string) ([]string, error) {
+	return r.client.Keys(r.ctx, pattern).Result()
+}
+
 func InitRabbitMq() (*amqp091.Connection, *amqp091.Channel, error) {
 	RabbitUrl := os.Getenv("RABBIT_URL")
 	conn, err := amqp091.Dial(RabbitUrl)

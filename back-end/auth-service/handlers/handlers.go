@@ -28,6 +28,15 @@ type userCodeRequest struct {
 	Email string `json:"email"`
 }
 
+type forgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type resetPasswordRequest struct {
+	Token       string `json:"token"`
+	NewPassword string `json:"newPassword"`
+}
+
 var rabbitData struct {
 	Email       string `json:"email"`
 	MessageBody string `json:"messageBody"`
@@ -527,6 +536,161 @@ func SendEmail(data string, email string) (config.ResponsePythonHandler, error) 
 	rabbitData.Email = email
 	rabbitData.MessageBody = data
 	rabbitData.Subject = "Verify your email"
+
+	correlationID := uuid.New()
+
+	err = config.ProduceMessage(requestQueue, responseQueue, ch, rabbitData, correlationID)
+	if err != nil {
+		return config.ResponsePythonHandler{}, err
+	}
+
+	response, err := config.WaitForResponseQueue(ch, responseQueue.Name, correlationID)
+	if err != nil {
+		return config.ResponsePythonHandler{}, err
+	}
+
+	if response.StatusCode != 200 && response.StatusCode != 201 {
+		return config.ResponsePythonHandler{}, errors.New("failed to send the email")
+	}
+
+	return *response, nil
+}
+
+func ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var request forgotPasswordRequest
+
+	if !parseRequestBody(w, r, &request) {
+		return
+	}
+
+	if !validateEmailRequest(w, request.Email) {
+		return
+	}
+
+	if !userExists(request.Email) {
+		respondWithError(w, http.StatusNotFound, "No account found with this email address")
+		return
+	}
+
+	resetToken := uuid.New().String()
+
+	rdb := config.NewRedisConfig()
+	err := rdb.Set("reset_"+request.Email, resetToken, 30*time.Minute)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate reset token")
+		return
+	}
+
+	go func() {
+		response, err := SendPasswordResetEmail(resetToken, request.Email)
+		if err != nil {
+			log.Printf("Error sending password reset email: %v", err)
+			return
+		}
+		if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
+			log.Printf("Error sending password reset email: status code %d", response.StatusCode)
+			return
+		}
+	}()
+
+	respondWithSuccess(w, http.StatusOK, map[string]string{
+		"message": "Password reset email sent successfully",
+	})
+}
+
+func ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var request resetPasswordRequest
+
+	if !parseRequestBody(w, r, &request) {
+		return
+	}
+
+	if request.Token == "" || request.NewPassword == "" {
+		respondWithError(w, http.StatusBadRequest, "Token and new password are required")
+		return
+	}
+
+	rdb := config.NewRedisConfig()
+	var userEmail string
+	found := false
+
+	keys, err := rdb.Keys("reset_*")
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to verify reset token")
+		return
+	}
+
+	for _, key := range keys {
+		storedToken, err := rdb.Get(key)
+		if err != nil {
+			continue
+		}
+		if storedToken == request.Token {
+			userEmail = key[6:]
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		respondWithError(w, http.StatusBadRequest, "Invalid or expired reset token")
+		return
+	}
+
+	hashedPassword, ok := hashPassword(w, request.NewPassword)
+	if !ok {
+		return
+	}
+
+	_, err = db.DB.Exec("UPDATE users SET password = $1 WHERE email = $2", hashedPassword, userEmail)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to update password")
+		return
+	}
+
+	err = rdb.Delete("reset_" + userEmail)
+	if err != nil {
+		log.Printf("Failed to delete reset token: %v", err)
+	}
+
+	respondWithSuccess(w, http.StatusOK, map[string]string{
+		"message": "Password reset successfully",
+	})
+}
+
+func SendPasswordResetEmail(token string, email string) (config.ResponsePythonHandler, error) {
+	conn, ch, err := config.InitRabbitMq()
+	if err != nil {
+		return config.ResponsePythonHandler{}, err
+	}
+	defer conn.Close()
+	defer ch.Close()
+
+	requestQueue, _ := config.DeclareQueue(
+		ch,
+		"resetPasswordEmail",
+		false,
+		false,
+		false,
+		false)
+
+	responseQueue, _ := config.DeclareQueue(
+		ch,
+		"responseFromRequestQueue",
+		false,
+		false,
+		false,
+		false)
+
+	baseURL := os.Getenv("FRONTEND_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:5173"
+	}
+	resetLink := baseURL + "/reset-password?token=" + token
+
+	rabbitData.Email = email
+	rabbitData.MessageBody = resetLink
+	rabbitData.Subject = "Reset your password"
 
 	correlationID := uuid.New()
 
