@@ -519,7 +519,7 @@ func SendEmail(data string, email string) (config.ResponsePythonHandler, error) 
 
 	requestQueue, _ := config.DeclareQueue(
 		ch,
-		"verifyEmail",
+		"account_queue",
 		false,
 		false,
 		false,
@@ -668,7 +668,7 @@ func SendPasswordResetEmail(token string, email string) (config.ResponsePythonHa
 
 	requestQueue, _ := config.DeclareQueue(
 		ch,
-		"resetPasswordEmail",
+		"account_queue",
 		false,
 		false,
 		false,
