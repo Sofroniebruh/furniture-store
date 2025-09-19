@@ -11,6 +11,7 @@ import Dashboard from "@/components/dashboard-related/Dashboard.vue";
 import CartPage from "@/components/cart/CartPage.vue";
 import CheckoutPage from "@/components/checkout/CheckoutPage.vue";
 import CheckoutSuccess from "@/components/checkout/CheckoutSuccess.vue";
+import ResetPassword from "@/components/ResetPassword.vue";
 
 const routes = [
     {
@@ -75,6 +76,11 @@ const routes = [
         name: "checkout-success",
         component: CheckoutSuccess,
         meta: { requiresAuth: true },
+    },
+    {
+        path: "/reset-password",
+        name: "ResetPassword",
+        component: ResetPassword,
     },
     {
         path: '/:pathMatch(.*)*',

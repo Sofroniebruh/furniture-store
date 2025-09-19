@@ -232,6 +232,69 @@ export const useAuthStore = defineStore("authStore", () => {
         }
     }
 
+    const requestPasswordReset = async (email: string) => {
+        try {
+            error.value = ""
+            loading.value = true;
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/forgot-password`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                error.value = data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return res.status
+            }
+
+            return res.status
+        } catch (e) {
+            console.error(e)
+            error.value = "Network error or server unavailable";
+            return 500
+        } finally {
+            loading.value = false
+        }
+    }
+
+    const resetPassword = async (token: string, newPassword: string) => {
+        try {
+            error.value = ""
+            loading.value = true;
+            const res = await fetch(`${import.meta.env.VITE_AUTH_SERVICE_URL}/reset-password`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                    token,
+                    newPassword 
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                error.value = data?.error || "Unknown error";
+                console.error("Error: ", error.value);
+                return res.status
+            }
+
+            return res.status
+        } catch (e) {
+            console.error(e)
+            error.value = "Network error or server unavailable";
+            return 500
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         user,
         isAuthenticated,
@@ -244,5 +307,7 @@ export const useAuthStore = defineStore("authStore", () => {
         verifyCode,
         logout,
         login,
+        requestPasswordReset,
+        resetPassword,
     }
 })

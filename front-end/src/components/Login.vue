@@ -7,6 +7,8 @@ import {useAuthStore} from "@/stores/useAuth.js";
 import {toast} from "vue-sonner";
 import {useScreenSheetStore} from "@/stores/useScreenSheetStore.js";
 import {useRouter} from "vue-router";
+import ForgotPassword from "@/components/ForgotPassword.vue";
+import {ref} from "vue";
 
 const schema = z.object({
   email: z.string().min(1, "Email is required").email("Email is not valid").default(""),
@@ -16,6 +18,7 @@ const schema = z.object({
 const auth = useAuthStore()
 const router = useRouter()
 const {setOpenDialog, setAllSheetsClosed} = useScreenSheetStore()
+const showForgotPassword = ref(false)
 const {handleSubmit, meta, values} = useForm({
   validationSchema: toTypedSchema(schema),
 })
@@ -52,10 +55,18 @@ const onSubmit = handleSubmit(async values => {
     toast.error("An unexpected error occurred")
   }
 })
+
+const handleForgotPassword = () => {
+  showForgotPassword.value = true
+}
+
+const handleBackToLogin = () => {
+  showForgotPassword.value = false
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div v-if="!showForgotPassword" class="flex flex-col gap-8">
     <h1 class="font-semibold text-2xl text-center mt-4">FUMI</h1>
     <form @submit.prevent="onSubmit" class="flex flex-col w-full items-center gap-4">
       <div class="flex flex-col w-full">
@@ -71,9 +82,13 @@ const onSubmit = handleSubmit(async values => {
         <span class="text-red-500 text-sm">{{ auth.error }}</span>
       </div>
       <div class="flex justify-between items-center w-full">
-        <Button type="button" class="cursor-pointer" variant="outline">Forgot password</Button>
+        <Button type="button" class="cursor-pointer" variant="outline" @click="handleForgotPassword">
+          Forgot password
+        </Button>
         <Button type="submit" class="cursor-pointer bg-[#c9a275] hover:bg-[#dbb384]">Sign In</Button>
       </div>
     </form>
   </div>
+  
+  <ForgotPassword v-else @back-to-login="handleBackToLogin" />
 </template>

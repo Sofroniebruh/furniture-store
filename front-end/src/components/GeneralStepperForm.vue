@@ -188,10 +188,22 @@ const handleResend = async () => {
           </div>
         </template>
         <template v-if="stepIndex === 2">
-          <div class="flex flex-col items-center justify-center gap-4 mb-5">
-            <h1 class="font-semibold text-lg">Enter verification code</h1>
+          <div class="flex flex-col items-center justify-center gap-4 mb-5 px-4">
+            <h1 class="font-semibold text-lg sm:text-xl text-center">Enter verification code</h1>
+            <p class="text-sm text-gray-600 text-center mb-2">
+              We've sent a 5-digit code to {{ values.email }}
+            </p>
             <PinInput :set-code="(code) => codeEntered = code" class="w-fit"></PinInput>
-            <span class="text-red-500 text-sm">{{ auth.error }}</span>
+            <span class="text-red-500 text-sm text-center">{{ auth.error }}</span>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              @click="handleResend"
+              class="text-sm text-blue-600 hover:text-blue-800 mt-2"
+            >
+              Didn't receive code? Resend
+            </Button>
           </div>
         </template>
         <template v-if="stepIndex === 3">

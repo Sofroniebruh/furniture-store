@@ -25,14 +25,14 @@ watch(value, (newVal) => {
         v-model="value"
         placeholder="○"
     >
-      <PinInputGroup class="gap-1">
+      <PinInputGroup class="gap-2 sm:gap-1">
         <template v-for="(id, index) in 5" :key="id">
           <PinInputSlot
-              class="rounded-md border"
+              class="rounded-md border w-12 h-12 sm:w-9 sm:h-9 text-lg sm:text-sm"
               :index="index"
           />
           <template v-if="index !== 4">
-            <PinInputSeparator/>
+            <PinInputSeparator class="hidden sm:block"/>
           </template>
         </template>
       </PinInputGroup>
