@@ -153,10 +153,12 @@ func updateUserRefreshToken(w http.ResponseWriter, userId uuid.UUID, refreshToke
 func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	sameSiteMode := http.SameSiteLaxMode
 	secure := false
+	var domain string
 
 	if os.Getenv("ENVIRONMENT") == "production" {
 		sameSiteMode = http.SameSiteNoneMode
 		secure = true
+		domain = "fumi.artorien.me"
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -164,6 +166,7 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		Value:    accessToken,
 		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
 		Path:     "/",
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSiteMode,
@@ -173,6 +176,7 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		Value:    refreshToken,
 		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
 		Path:     "/",
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSiteMode,
@@ -182,10 +186,12 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 func clearAuthCookies(w http.ResponseWriter) {
 	sameSiteMode := http.SameSiteLaxMode
 	secure := false
+	var domain string
 
 	if os.Getenv("ENVIRONMENT") == "production" {
 		sameSiteMode = http.SameSiteNoneMode
 		secure = true
+		domain = "fumi.artorien.me"
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -193,6 +199,7 @@ func clearAuthCookies(w http.ResponseWriter) {
 		Value:    "",
 		MaxAge:   -1,
 		Path:     "/",
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSiteMode,
@@ -202,6 +209,7 @@ func clearAuthCookies(w http.ResponseWriter) {
 		Value:    "",
 		MaxAge:   -1,
 		Path:     "/",
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSiteMode,
