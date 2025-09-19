@@ -34,6 +34,9 @@ COPY --from=builder /app/.env .env
 # Set executable permissions
 RUN chmod +x ./server
 
+# Set environment variable for production
+ENV ENVIRONMENT=production
+
 # Set the user
 USER appuser
 

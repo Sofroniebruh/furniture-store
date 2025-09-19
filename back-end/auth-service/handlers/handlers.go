@@ -151,14 +151,22 @@ func updateUserRefreshToken(w http.ResponseWriter, userId uuid.UUID, refreshToke
 }
 
 func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
+	sameSiteMode := http.SameSiteLaxMode
+	secure := false
+
+	if os.Getenv("ENVIRONMENT") == "production" {
+		sameSiteMode = http.SameSiteNoneMode
+		secure = true
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		MaxAge:   int(config.ACCESS_TOKEN_TTL.Seconds()),
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSiteMode,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
@@ -166,20 +174,28 @@ func setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 		MaxAge:   int(config.REFRESH_TOKEN_TTL.Seconds()),
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSiteMode,
 	})
 }
 
 func clearAuthCookies(w http.ResponseWriter) {
+	sameSiteMode := http.SameSiteLaxMode
+	secure := false
+
+	if os.Getenv("ENVIRONMENT") == "production" {
+		sameSiteMode = http.SameSiteNoneMode
+		secure = true
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSiteMode,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
@@ -187,8 +203,8 @@ func clearAuthCookies(w http.ResponseWriter) {
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		Secure:   secure,
+		SameSite: sameSiteMode,
 	})
 }
 
