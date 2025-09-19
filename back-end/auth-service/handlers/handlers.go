@@ -202,7 +202,6 @@ func clearAuthCookies(w http.ResponseWriter) {
 		Value:    "",
 		MaxAge:   -1,
 		Path:     "/",
-		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: sameSiteMode,
