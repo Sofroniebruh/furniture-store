@@ -47,6 +47,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
                     .destination(destination)
                     .message(message)
                     .source(verifiedEmail)
+                    .configurationSetName(System.getenv("SES_CONFIGURATION_SET"))
                     .build();
 
             sesClient.sendEmail(emailRequest);
