@@ -20,7 +20,7 @@ def main():
     credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
     conn = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq', RABBIT_PORT, '/', credentials))
     channel = conn.channel()
-    channel.queue_declare(queue='verifyEmail')
+    channel.queue_declare(queue='account_queue')
 
     def callback(ch, method, properties, body):
         decoded_body = body.decode('utf-8')
