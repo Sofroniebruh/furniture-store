@@ -54,7 +54,7 @@ def main():
             body=response_body.encode('utf-8')
         )
 
-    channel.basic_consume(queue='verifyEmail', auto_ack=True, on_message_callback=callback)
+    channel.basic_consume(queue='account_queue', auto_ack=True, on_message_callback=callback)
     channel.start_consuming()
 
 
