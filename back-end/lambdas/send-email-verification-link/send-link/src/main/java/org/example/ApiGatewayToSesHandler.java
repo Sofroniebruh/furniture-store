@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.*;
+import java.util.HashMap;
 import java.util.Map;
 
 public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent>
@@ -16,14 +17,34 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
     private static final SesClient sesClient = SesClient.create();
     private static final String verifiedEmail = System.getenv("VERIFIED_EMAIL");
 
+    private Map<String, String> getCorsHeaders(APIGatewayProxyRequestEvent request) {
+        Map<String, String> headers = new HashMap<>();
+
+        String origin = request.getHeaders() != null ? request.getHeaders().get("Origin") : null;
+        if (origin == null && request.getHeaders() != null) {
+            origin = request.getHeaders().get("origin");
+        }
+
+        if ("http://localhost:3000".equals(origin) || "https://artorien.me".equals(origin) || "https://www.artorien.me".equals(origin)) {
+            headers.put("Access-Control-Allow-Origin", origin);
+        } else {
+            headers.put("Access-Control-Allow-Origin", "http://localhost:3000");
+        }
+
+        headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key");
+        headers.put("Access-Control-Allow-Methods", "POST,OPTIONS");
+        headers.put("Content-Type", "application/json");
+        return headers;
+    }
+
     public boolean sendEmail(String receiverEmail, String subject, String emailBody)
     {
         System.out.println("I am here");
         System.out.println("Email body: " + emailBody);
-        
+
         if (subject == null) subject = "";
         if (emailBody == null) emailBody = "";
-        
+
         try
         {
             Destination destination = Destination.builder()
@@ -73,17 +94,23 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context)
     {
+        if ("OPTIONS".equals(request.getHttpMethod())) {
+            return new APIGatewayProxyResponseEvent()
+                    .withStatusCode(200)
+                    .withHeaders(getCorsHeaders(request))
+                    .withBody("");
+        }
+
         try
         {
             System.out.println("Raw request body: " + request.getBody());
             System.out.println("Request headers: " + request.getHeaders());
-            
+
             String requestBody = request.getBody();
-            // Handle case where body might be double-encoded as a JSON string
             if (requestBody.startsWith("\"") && requestBody.endsWith("\"")) {
                 requestBody = objectMapper.readValue(requestBody, String.class);
             }
-            
+
             EmailPOJO emailPOJO = objectMapper.readValue(requestBody, EmailPOJO.class);
             String receiverEmail = emailPOJO.getEmail();
             String body = emailPOJO.getMessageBody();
@@ -92,7 +119,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
 
             System.out.println("Your email POJO: " + emailPOJO);
             System.out.println("Your email body: " + body);
-            
+
             if (receiverEmail == null || receiverEmail.trim().isEmpty()) {
                 throw new CustomException("Receiver email is required");
             }
@@ -101,7 +128,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
             }
 
             System.out.println("Subject for comparison: '" + subject + "'");
-            
+
             if (subject.toLowerCase().contains("verify"))
             {
                 if (body == null) body = "";
@@ -123,6 +150,7 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
 
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(200)
+                    .withHeaders(getCorsHeaders(request))
                     .withBody(value);
         }
         catch (Exception e)
@@ -133,13 +161,15 @@ public class ApiGatewayToSesHandler implements RequestHandler<APIGatewayProxyReq
 
                 return new APIGatewayProxyResponseEvent()
                         .withStatusCode(500)
+                        .withHeaders(getCorsHeaders(request))
                         .withBody(value);
             }
             catch (JsonProcessingException jpe)
             {
                 return new APIGatewayProxyResponseEvent()
                         .withStatusCode(500)
-                        .withBody(e.getMessage());
+                        .withHeaders(getCorsHeaders(request))
+                        .withBody("{\"error\":\"" + e.getMessage() + "\"}");
             }
         }
     }
